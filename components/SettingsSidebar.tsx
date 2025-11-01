@@ -1,0 +1,54 @@
+import React from 'react';
+import { CloseIcon } from './icons/EditorIcons';
+import type { ActivePanel, ImageOptions } from '../App';
+import LinkPane from './panes/LinkPane';
+import ImagePane from './panes/ImagePane';
+import TablePane from './panes/TablePane';
+import FindReplacePane from './panes/FindReplacePane';
+import ShapePane from './panes/ShapePane';
+
+
+interface SettingsSidebarProps {
+  activePanel: ActivePanel;
+  editingElement: HTMLElement | null;
+  onClose: () => void;
+  onReplaceAll: (find: string, replace: string, options: { matchCase: boolean; wholeWord: boolean }) => void;
+  onApplyLink: (data: { url: string; text: string }, elementToUpdate: HTMLAnchorElement | null) => void;
+  onApplyImageSettings: (options: ImageOptions, elementToUpdate: HTMLImageElement | null) => void;
+  onInsertTable: (rows: number, cols: number) => void;
+  onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
+  onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
+}
+
+const panelTitles: Record<NonNullable<ActivePanel>, string> = {
+    link: 'Insert/Edit Link',
+    image: 'Insert/Edit Image',
+    table: 'Insert Table',
+    findReplace: 'Find and Replace',
+    shape: 'Shape Properties'
+};
+
+const SettingsSidebar: React.FC<SettingsSidebarProps> = (props) => {
+    const { activePanel, onClose, editingElement } = props;
+    const title = activePanel ? panelTitles[activePanel] : '';
+
+    return (
+        <aside className="w-80 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full flex-shrink-0">
+            <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+                <h2 className="font-semibold text-gray-800 dark:text-gray-100">{title}</h2>
+                <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Close settings sidebar">
+                <CloseIcon />
+                </button>
+            </header>
+            <div className="flex-grow p-4 overflow-y-auto">
+                {activePanel === 'link' && <LinkPane onApplyLink={props.onApplyLink} onClose={onClose} editingElement={editingElement as HTMLAnchorElement | null} />}
+                {activePanel === 'image' && <ImagePane onApplyImageSettings={props.onApplyImageSettings} onClose={onClose} editingElement={editingElement as HTMLImageElement | null} onUpdateElementStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} />}
+                {activePanel === 'table' && <TablePane onInsertTable={props.onInsertTable} />}
+                {activePanel === 'findReplace' && <FindReplacePane onReplaceAll={props.onReplaceAll} />}
+                {activePanel === 'shape' && editingElement && <ShapePane editingElement={editingElement} onUpdateStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} />}
+            </div>
+        </aside>
+    );
+};
+
+export default SettingsSidebar;
