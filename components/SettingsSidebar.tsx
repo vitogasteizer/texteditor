@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CloseIcon } from './icons/EditorIcons';
 import type { ActivePanel, ImageOptions } from '../App';
@@ -7,6 +6,7 @@ import ImagePane from './panes/ImagePane';
 import TablePane from './panes/TablePane';
 import FindReplacePane from './panes/FindReplacePane';
 import ShapePane from './panes/ShapePane';
+import EditTablePane from './panes/EditTablePane';
 
 
 interface SettingsSidebarProps {
@@ -20,22 +20,26 @@ interface SettingsSidebarProps {
   onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
   onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
   onAiImageEdit: (prompt: string) => void;
+  onTableAction: (action: 'addRowAbove' | 'addRowBelow' | 'deleteRow' | 'addColLeft' | 'addColRight' | 'deleteCol' | 'deleteTable' | 'mergeCells' | 'splitCell') => void;
+  onTableStyle: (style: React.CSSProperties, applyTo: 'cell' | 'table') => void;
   t: (key: string) => string;
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = (props) => {
     const { activePanel, onClose, editingElement, t } = props;
     
-    const panelTitles: Record<NonNullable<ActivePanel>, string> = {
-        link: t('settings.linkTitle'),
-        image: t('settings.imageTitle'),
-        table: t('settings.tableTitle'),
-        findReplace: t('settings.findReplaceTitle'),
-        shape: t('settings.shapeTitle')
-    };
-
-    const title = activePanel ? panelTitles[activePanel] : '';
-
+    let title = '';
+    if (activePanel) {
+        const panelTitles: Record<NonNullable<ActivePanel>, string> = {
+            link: t('settings.linkTitle'),
+            image: t('settings.imageTitle'),
+            table: editingElement ? t('settings.tableEditTitle') : t('settings.tableTitle'),
+            findReplace: t('settings.findReplaceTitle'),
+            shape: t('settings.shapeTitle')
+        };
+        title = panelTitles[activePanel];
+    }
+    
     return (
         <aside className="w-80 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full flex-shrink-0">
             <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
@@ -47,7 +51,8 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = (props) => {
             <div className="flex-grow p-4 overflow-y-auto">
                 {activePanel === 'link' && <LinkPane onApplyLink={props.onApplyLink} onClose={onClose} editingElement={editingElement as HTMLAnchorElement | null} t={t} />}
                 {activePanel === 'image' && <ImagePane onApplyImageSettings={props.onApplyImageSettings} onClose={onClose} editingElement={editingElement as HTMLImageElement | null} onUpdateElementStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} onAiImageEdit={props.onAiImageEdit} t={t} />}
-                {activePanel === 'table' && <TablePane onInsertTable={props.onInsertTable} t={t} />}
+                {activePanel === 'table' && !editingElement && <TablePane onInsertTable={props.onInsertTable} t={t} />}
+                {activePanel === 'table' && editingElement && <EditTablePane editingElement={editingElement as HTMLTableElement} onTableAction={props.onTableAction} onTableStyle={props.onTableStyle} onChangeZIndex={props.onChangeZIndex} t={t} />}
                 {activePanel === 'findReplace' && <FindReplacePane onReplaceAll={props.onReplaceAll} t={t} />}
                 {activePanel === 'shape' && editingElement && <ShapePane editingElement={editingElement} onUpdateStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} t={t} />}
             </div>

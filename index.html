@@ -110,6 +110,43 @@
       /* Hide the text inside the indicator for printing */
       .page-break-indicator * { display: none !important; }
     }
+
+    /* Editor-specific styles */
+    #editor-page > div[contenteditable="true"] ul:not([data-type="checklist"]) {
+      list-style-type: disc;
+      padding-left: 2em;
+    }
+    #editor-page > div[contenteditable="true"] ol {
+      list-style-type: decimal;
+      padding-left: 2em;
+    }
+
+    /* Checklist styles */
+    ul[data-type="checklist"] {
+      list-style-type: none !important;
+      padding-left: 0 !important;
+      margin-left: 0 !important;
+    }
+    ul[data-type="checklist"] > li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: 0;
+      padding-left: 0;
+    }
+    ul[data-type="checklist"] > li > span:first-of-type {
+      flex-shrink: 0;
+      user-select: none;
+    }
+    ul[data-type="checklist"] > li[data-checked="true"] > div:last-of-type {
+      text-decoration: line-through;
+      color: #888;
+    }
+    ul[data-type="checklist"] input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      cursor: pointer;
+    }
   </style>
   <script type="importmap">
 {

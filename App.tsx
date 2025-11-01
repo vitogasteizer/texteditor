@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import Toolbar from './components/Toolbar';
@@ -263,37 +264,36 @@ const App: React.FC = () => {
   // Delete selected object effect
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElement) {
-        const activeElement = document.activeElement as HTMLElement;
+        if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElement) {
+            const selection = window.getSelection();
+            
+            // If the user's cursor is inside the selected element (e.g., editing text in a table or shape),
+            // let the default key action proceed and do not delete the entire element.
+            if (selection && selection.anchorNode && selectedElement.contains(selection.anchorNode)) {
+                // Extra check for empty textboxes. Allow deletion if the inner div is empty.
+                const shapeText = selectedElement.querySelector('[contenteditable="true"]');
+                if (shapeText && shapeText.textContent?.trim() === '') {
+                   // Allow deletion to proceed
+                } else {
+                   return;
+                }
+            }
 
-        // If focus is on an input or textarea, don't delete the selected element.
-        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
-            return;
+            if (editorRef.current && editorRef.current.contains(selectedElement)) {
+                event.preventDefault(); // Prevent browser back navigation on backspace
+                selectedElement.remove();
+                handleContentChange(editorRef.current.innerHTML);
+                setSelectedElement(null);
+                setActivePanel(null);
+            }
         }
-
-        // Check if the focus is inside an editable area of the selected element
-        const isEditingShapeText = selectedElement.contains(activeElement) && activeElement?.isContentEditable;
-
-        // If editing text inside a shape (like a textbox), don't delete the whole shape
-        if (isEditingShapeText) {
-          return;
-        }
-
-        if (editorRef.current && editorRef.current.contains(selectedElement)) {
-          event.preventDefault(); // Prevent browser back navigation on backspace
-          selectedElement.remove();
-          handleContentChange(editorRef.current.innerHTML);
-          setSelectedElement(null);
-          setActivePanel(null);
-        }
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedElement, handleContentChange]);
+}, [selectedElement, handleContentChange]);
 
   const saveSelection = () => {
     const selection = window.getSelection();
@@ -503,6 +503,15 @@ const App: React.FC = () => {
         /* Hide the text inside the indicator */
         .page-break-indicator * { display: none; }
         .page-break-indicator::before, .page-break-indicator::after { content: ''; }
+        
+        ul:not([data-type="checklist"]) { list-style-type: disc; padding-left: 2em; }
+        ol { list-style-type: decimal; padding-left: 2em; }
+        
+        ul[data-type="checklist"] { list-style-type: none !important; padding-left: 0 !important; }
+        ul[data-type="checklist"] > li { display: flex; align-items: center; gap: 0.5rem; }
+        ul[data-type="checklist"] > li[data-checked="true"] > div:last-of-type { text-decoration: line-through; color: #888; }
+        ul[data-type="checklist"] input[type="checkbox"] { margin-right: 8px; }
+
       </style>`);
       printWindow.document.write('</head><body>');
       printWindow.document.write(editorContent);
@@ -678,7 +687,7 @@ const App: React.FC = () => {
     if (!editor || !element) return;
 
     const positionedElements = Array.from(
-      editor.querySelectorAll('[data-shape-type], img[style*="position: absolute"]')
+      editor.querySelectorAll('[data-shape-type], img[style*="position: absolute"], table[style*="position: absolute"]')
     ) as HTMLElement[];
     
     // Normalize z-indexes to a continuous sequence
@@ -716,6 +725,258 @@ const App: React.FC = () => {
     tableHTML += '</tbody></table><p>&nbsp;</p>';
     document.execCommand('insertHTML', false, tableHTML);
     setActivePanel(null);
+  };
+
+  const handleInsertChecklist = () => {
+    restoreSelection();
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    let content = selection.toString().trim() || '<br>';
+
+    const checklistHtml = `
+      <ul data-type="checklist">
+        <li data-checked="false">
+          <span contenteditable="false">
+            <input type="checkbox" />
+          </span>
+          <div>${content}</div>
+        </li>
+      </ul><p><br></p>`; // Add a new paragraph after the list
+
+    document.execCommand('insertHTML', false, checklistHtml);
+    focusEditor();
+  };
+
+  const getCurrentTableSelection = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return null;
+      const anchorNode = selection.anchorNode;
+      if (!anchorNode) return null;
+
+      const cell = (anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode as HTMLElement)?.closest('td, th');
+      if (!cell) return null;
+      
+      const row = cell.closest('tr');
+      if (!row) return null;
+
+      const table = row.closest('table');
+      if (!table || table !== editingElement) return null;
+
+      const cellIndex = Array.from(row.cells).indexOf(cell as HTMLTableCellElement);
+      const rowIndex = row.rowIndex;
+      
+      return { table, row, cell, rowIndex, cellIndex };
+  };
+  
+  // Table cell merge/split helpers
+  const getSelectedTableCells = (tableEl: HTMLTableElement): HTMLTableCellElement[] => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return [];
+      const selectedCells: HTMLTableCellElement[] = [];
+      const cells = tableEl.querySelectorAll('td, th');
+      for (const cell of Array.from(cells)) {
+          if (selection.containsNode(cell, true)) {
+              selectedCells.push(cell as HTMLTableCellElement);
+          }
+      }
+      return [...new Set(selectedCells)];
+  };
+
+  const buildTableMatrix = (table: HTMLTableElement): ({ cell: HTMLTableCellElement; isPlaceholder: boolean } | null)[][] => {
+      const matrix: ({ cell: HTMLTableCellElement; isPlaceholder: boolean } | null)[][] = [];
+      const rows = Array.from(table.rows);
+
+      rows.forEach((row, rowIndex) => {
+          if (!matrix[rowIndex]) matrix[rowIndex] = [];
+          let matrixColIndex = 0;
+          const cells = Array.from(row.cells);
+          cells.forEach((cell) => {
+              while (matrix[rowIndex][matrixColIndex]) {
+                  matrixColIndex++;
+              }
+              const colSpan = cell.colSpan || 1;
+              const rowSpan = cell.rowSpan || 1;
+              for (let r = 0; r < rowSpan; r++) {
+                  for (let c = 0; c < colSpan; c++) {
+                      const targetRow = rowIndex + r;
+                      if (!matrix[targetRow]) matrix[targetRow] = [];
+                      matrix[targetRow][matrixColIndex + c] = { cell, isPlaceholder: r > 0 || c > 0 };
+                  }
+              }
+              matrixColIndex += colSpan;
+          });
+      });
+      return matrix;
+  };
+
+
+  const handleTableAction = (action: 'addRowAbove' | 'addRowBelow' | 'deleteRow' | 'addColLeft' | 'addColRight' | 'deleteCol' | 'deleteTable' | 'mergeCells' | 'splitCell') => {
+      if (action === 'deleteTable') {
+          if (editingElement && editingElement.tagName === 'TABLE') {
+              editingElement.remove();
+              handleContentChange(editorRef.current!.innerHTML);
+              setActivePanel(null);
+              setSelectedElement(null);
+          }
+          return;
+      }
+      
+      const table = editingElement as HTMLTableElement;
+      if (!table) return;
+
+      if (action === 'mergeCells') {
+          const selectedCells = getSelectedTableCells(table);
+          if (selectedCells.length < 2) {
+              setToast(t('toasts.tableMergeContext'));
+              return;
+          }
+          
+          const matrix = buildTableMatrix(table);
+          let minR = Infinity, minC = Infinity, maxR = -1, maxC = -1;
+          
+          const cellCoords = new Map<HTMLTableCellElement, {r: number, c: number}>();
+          
+          for(let r = 0; r < matrix.length; r++) {
+              for(let c = 0; c < (matrix[r]?.length ?? 0); c++) {
+                  const matrixCell = matrix[r][c];
+                  if(matrixCell && selectedCells.includes(matrixCell.cell) && !matrixCell.isPlaceholder) {
+                       if(!cellCoords.has(matrixCell.cell)) {
+                           cellCoords.set(matrixCell.cell, {r, c});
+                       }
+                  }
+              }
+          }
+
+          selectedCells.forEach(cell => {
+              const coords = cellCoords.get(cell);
+              if(coords) {
+                minR = Math.min(minR, coords.r);
+                minC = Math.min(minC, coords.c);
+                maxR = Math.max(maxR, coords.r + cell.rowSpan - 1);
+                maxC = Math.max(maxC, coords.c + cell.colSpan - 1);
+              }
+          });
+
+          const primaryCell = selectedCells[0];
+          let combinedContent = '';
+
+          selectedCells.forEach((cell, index) => {
+              if (index > 0) {
+                  combinedContent += cell.innerHTML;
+                  cell.remove();
+              }
+          });
+          primaryCell.innerHTML += combinedContent;
+          primaryCell.rowSpan = maxR - minR + 1;
+          primaryCell.colSpan = maxC - minC + 1;
+
+          handleContentChange(editorRef.current!.innerHTML);
+          return;
+      }
+
+      if (action === 'splitCell') {
+          const selectedCells = getSelectedTableCells(table);
+          if (selectedCells.length !== 1 || (selectedCells[0].colSpan <= 1 && selectedCells[0].rowSpan <= 1)) {
+              setToast(t('toasts.tableSplitContext'));
+              return;
+          }
+          const cellToSplit = selectedCells[0];
+          const { rowSpan, colSpan } = cellToSplit;
+          
+          const matrix = buildTableMatrix(table);
+          let startR = -1, startC = -1;
+          
+          for(let r=0; r < matrix.length; r++) {
+              const cIndex = matrix[r].findIndex(c => c?.cell === cellToSplit);
+              if (cIndex !== -1) {
+                  startR = r;
+                  startC = cIndex;
+                  break;
+              }
+          }
+
+          for (let r = 0; r < rowSpan; r++) {
+              for (let c = 0; c < colSpan; c++) {
+                  if (r === 0 && c === 0) continue;
+                  const newCell = document.createElement('td');
+                  newCell.style.border = '1px solid #ccc';
+                  newCell.style.padding = '8px';
+                  newCell.innerHTML = '<p>&nbsp;</p>';
+                  
+                  const targetRow = table.rows[startR + r];
+                  const insertBeforeCell = matrix[startR+r][startC+c+1]?.cell;
+                  targetRow.insertBefore(newCell, insertBeforeCell || null);
+              }
+          }
+          cellToSplit.rowSpan = 1;
+          cellToSplit.colSpan = 1;
+
+          handleContentChange(editorRef.current!.innerHTML);
+          return;
+      }
+
+      const selection = getCurrentTableSelection();
+      if (!selection) {
+          setToast(t('toasts.tableActionContext'));
+          return;
+      }
+      const { row, rowIndex, cellIndex } = selection;
+
+      switch(action) {
+          case 'addRowAbove':
+          case 'addRowBelow': {
+              const newRow = table.insertRow(action === 'addRowBelow' ? rowIndex + 1 : rowIndex);
+              for (let i = 0; i < row.cells.length; i++) {
+                  const newCell = newRow.insertCell(i);
+                  newCell.style.border = '1px solid #ccc';
+                  newCell.style.padding = '8px';
+                  newCell.innerHTML = '<p>&nbsp;</p>';
+              }
+              break;
+          }
+          case 'deleteRow':
+              table.deleteRow(rowIndex);
+              break;
+          case 'addColLeft':
+          case 'addColRight': {
+              const newCellIndex = action === 'addColRight' ? cellIndex + 1 : cellIndex;
+              for (let i = 0; i < table.rows.length; i++) {
+                  const newCell = table.rows[i].insertCell(newCellIndex);
+                  newCell.style.border = '1px solid #ccc';
+                  newCell.style.padding = '8px';
+                  newCell.innerHTML = '<p>&nbsp;</p>';
+              }
+              break;
+          }
+          case 'deleteCol':
+              for (let i = 0; i < table.rows.length; i++) {
+                  table.rows[i].deleteCell(cellIndex);
+              }
+              break;
+      }
+      handleContentChange(editorRef.current!.innerHTML);
+  };
+  
+  const handleTableStyle = (style: React.CSSProperties, applyTo: 'cell' | 'table') => {
+    if (applyTo === 'table' && editingElement) {
+        Object.assign(editingElement.style, style);
+        // Apply to all cells too for borders
+        if(style.borderColor || style.borderWidth) {
+          editingElement.querySelectorAll<HTMLElement>('td, th').forEach((cell) => {
+            if(style.borderColor) cell.style.borderColor = style.borderColor as string;
+            if(style.borderWidth) cell.style.borderWidth = style.borderWidth as string;
+          });
+        }
+    } else {
+        const selection = getCurrentTableSelection();
+        if (selection) {
+            Object.assign(selection.cell.style, style);
+        } else {
+            setToast(t('toasts.tableActionContext'));
+        }
+    }
+    handleContentChange(editorRef.current!.innerHTML);
   };
 
   const handleInsertPageBreak = () => {
@@ -871,7 +1132,7 @@ const App: React.FC = () => {
 
             // Don't show if selecting an entire shape/image
             const parent = range.commonAncestorContainer.parentElement;
-            if (parent?.closest('[data-shape-type], img')) {
+            if (parent?.closest('[data-shape-type], img, table')) {
                 setFloatingToolbar(null);
                 return;
             }
@@ -901,8 +1162,12 @@ const App: React.FC = () => {
     const image = element.closest('img');
     const link = element.closest('a');
     const shape = element.closest('[data-shape-type]') as HTMLElement;
+    const table = element.closest('table');
 
-    if (shape) {
+    if (table) {
+        openPanel('table', table);
+        return true;
+    } else if (shape) {
         openPanel('shape', shape);
         return true;
     } else if (image) {
@@ -924,6 +1189,24 @@ const App: React.FC = () => {
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+    
+    // Checklist handler
+    if (target.tagName === 'INPUT' && target.getAttribute('type') === 'checkbox') {
+        const li = target.closest('li');
+        if (li && li.parentElement?.dataset.type === 'checklist') {
+            // Defer update to allow browser to update checkbox 'checked' state
+            setTimeout(() => {
+                const isChecked = (target as HTMLInputElement).checked;
+                li.dataset.checked = isChecked ? 'true' : 'false';
+                if (editorRef.current) {
+                    handleContentChange(editorRef.current.innerHTML);
+                }
+            }, 0);
+            return; // Stop further processing
+        }
+    }
+
+    // Link handler
     const link = target.closest('a');
     if (link && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
@@ -931,11 +1214,16 @@ const App: React.FC = () => {
         if (href) {
             window.open(href, '_blank', 'noopener,noreferrer');
         }
+        return;
     }
     
-    const interactiveElement = target.closest('img, [data-shape-type]') as HTMLElement;
+    const interactiveElement = target.closest('img, [data-shape-type], table') as HTMLElement;
     if (interactiveElement) {
-        setSelectedElement(interactiveElement);
+        if (interactiveElement.tagName === 'TABLE') {
+          openPanel('table', interactiveElement);
+        } else {
+          setSelectedElement(interactiveElement);
+        }
         setFloatingToolbar(null);
     } else if (target === editorRef.current || target.parentElement === editorRef.current) {
         setSelectedElement(null);
@@ -964,12 +1252,20 @@ const App: React.FC = () => {
     setIsReadingAloud(false);
   }, []);
 
+  const checkAiAvailability = () => {
+      if (!aiRef.current) {
+          setToast(t('toasts.aiNotAvailable'));
+          return false;
+      }
+      return true;
+  };
+
   const handleReadAloud = async () => {
     if (isReadingAloud) {
       stopReadingAloud();
       return;
     }
-    if (!aiRef.current) return;
+    if (!checkAiAvailability()) return;
 
     const selection = window.getSelection();
     let textToRead = '';
@@ -985,7 +1281,7 @@ const App: React.FC = () => {
     setToast(t('toasts.aiGeneratingAudio'));
 
     try {
-      const response = await aiRef.current.models.generateContent({
+      const response = await aiRef.current!.models.generateContent({
         model: 'gemini-2.5-flash-preview-tts',
         contents: [{ parts: [{ text: textToRead }] }],
         config: { responseModalities: [Modality.AUDIO] },
@@ -1017,7 +1313,7 @@ const App: React.FC = () => {
   };
 
   const handleAiAction = async (action: string, option?: string) => {
-    if (!aiRef.current) return;
+    if (!checkAiAvailability()) return;
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
@@ -1057,7 +1353,7 @@ const App: React.FC = () => {
     setToast(t('toasts.aiProcessing'));
 
     try {
-      const response = await aiRef.current.models.generateContent({ model, contents: prompt });
+      const response = await aiRef.current!.models.generateContent({ model, contents: prompt });
       const resultText = response.text;
 
       if (action === 'continue-writing') {
@@ -1076,7 +1372,7 @@ const App: React.FC = () => {
   };
 
   const handleAiImageEdit = async (prompt: string, imageElement: HTMLImageElement) => {
-    if (!aiRef.current || !prompt || !imageElement) return;
+    if (!checkAiAvailability() || !prompt || !imageElement) return;
 
     setIsAnalyzing(true);
     setToast(t('toasts.aiEditingImage'));
@@ -1163,6 +1459,7 @@ const App: React.FC = () => {
                     setIsAiSidekickVisible(false);
                   }}
                   onToggleAiSidekick={() => {
+                      if (!checkAiAvailability()) return;
                       setIsAiSidekickVisible(prev => !prev);
                       setActivePanel(null);
                       setIsCommentsSidebarVisible(false);
@@ -1184,10 +1481,12 @@ const App: React.FC = () => {
                   onCopyFormatting={handleCopyFormatting} 
                   isFormatPainterActive={isFormatPainterActive}
                   onToggleAiSidekick={() => {
+                      if (!checkAiAvailability()) return;
                       setIsAiSidekickVisible(prev => !prev);
                       setActivePanel(null);
                       setIsCommentsSidebarVisible(false);
                   }}
+                  onInsertChecklist={handleInsertChecklist}
                   t={t}
                 />
             </header>
@@ -1256,6 +1555,8 @@ const App: React.FC = () => {
                             onUpdateElementStyle={handleUpdateElementStyle}
                             onChangeZIndex={handleChangeZIndex}
                             onAiImageEdit={(prompt) => handleAiImageEdit(prompt, editingElement as HTMLImageElement)}
+                            onTableAction={handleTableAction}
+                            onTableStyle={handleTableStyle}
                             t={t}
                         />
                     ) : isCommentsSidebarVisible ? (

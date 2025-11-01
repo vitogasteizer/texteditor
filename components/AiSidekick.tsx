@@ -106,7 +106,11 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
     }, [chatHistory]);
 
     const handleChatSubmit = async () => {
-        if (!chatInput.trim() || isChatting || !ai) return;
+        if (!ai) {
+          setToast(t('toasts.aiNotAvailable'));
+          return;
+        }
+        if (!chatInput.trim() || isChatting) return;
 
         const newUserMessage: ChatMessage = { role: 'user', text: chatInput };
         setChatHistory(prev => [...prev, newUserMessage]);
@@ -174,7 +178,12 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
     };
     
     const handleGenerateImage = async () => {
-        if (!imagePrompt.trim() || isGenerating || !ai) return;
+        if (!ai) {
+          setToast(t('toasts.aiNotAvailable'));
+          return;
+        }
+        if (!imagePrompt.trim() || isGenerating) return;
+
         setIsGenerating(true);
         setGeneratedImages([]);
         setToast(t('toasts.aiGeneratingImage'));
@@ -194,7 +203,12 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
     };
 
     const handleStartLive = async () => {
-        if (!ai || isLive) return;
+        if (!ai) {
+          setToast(t('toasts.aiNotAvailable'));
+          return;
+        }
+        if (isLive) return;
+
         setIsLive(true);
         setLiveTranscript({ user: '', model: '' });
 

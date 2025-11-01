@@ -30,6 +30,9 @@ export const ListOrderedIcon: React.FC = () => (
 export const ListUnorderedIcon: React.FC = () => (
   <svg {...iconProps}><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
 );
+export const ChecklistIcon: React.FC = () => (
+    <svg {...iconProps}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+);
 export const AlignLeftIcon: React.FC = () => (
   <svg {...iconProps}><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
 );
@@ -110,6 +113,24 @@ export const PaintBrushIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) =
 );
 export const TextShadowIcon: React.FC = () => (
     <svg {...iconProps} viewBox="0 0 24 24"><path d="M12.25 18.5H5.75M18 18.5H16.25M14 6.5L10 18.5M19 4L5 4"></path></svg>
+);
+export const RowInsertTopIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className || iconProps.className}><path d="M21 14H3"/><path d="M21 6H3"/><path d="M12 10V2"/><path d="m15 5-3-3-3 3"/><path d="M12 18v2"/></svg>
+);
+export const RowInsertBottomIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className || iconProps.className}><path d="M21 10H3"/><path d="M21 18H3"/><path d="M12 14v8"/><path d="m15 19-3 3-3-3"/></svg>
+);
+export const ColumnInsertLeftIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className || iconProps.className}><path d="M14 21V3"/><path d="M6 21V3"/><path d="M10 12H2"/><path d="m5 9 3 3-3 3"/></svg>
+);
+export const ColumnInsertRightIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className || iconProps.className}><path d="M10 21V3"/><path d="M18 21V3"/><path d="M14 12h8"/><path d="m19 9-3 3 3 3"/></svg>
+);
+export const MergeCellsIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className || iconProps.className}><rect width="8" height="8" x="2" y="2" rx="2"/><rect width="8" height="8" x="14" y="2" rx="2"/><rect width="8" height="8" x="8" y="14" rx="2"/><path d="M12 14v-4h4"/></svg>
+);
+export const SplitCellIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className || iconProps.className}><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-4-4H3"/><path d="M21 21V12a4 4 0 0 0-4-4h-5"/></svg>
 );
 // Menu Bar Icons
 export const FilePlusIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (

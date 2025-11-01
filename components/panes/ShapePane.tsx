@@ -182,7 +182,8 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
         };
     } else { // left or right
         newStyles = {
-            position: 'relative',
+// FIX: Assert 'relative' as a constant to match the literal type expected by CSSProperties.
+            position: 'relative' as const,
             float: mode,
             margin: mode === 'left' ? '0.5rem 1rem 0.5rem 0' : '0.5rem 0 0.5rem 1rem',
             top: '',
