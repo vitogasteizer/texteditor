@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob as GenAIBlob } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import Toolbar from './components/Toolbar';
 import Editor from './components/Editor';
 import MenuBar from './components/MenuBar';
@@ -15,7 +15,7 @@ import StatusBar from './components/StatusBar';
 import ObjectWrapper from './components/ObjectWrapper';
 import FloatingToolbar from './components/FloatingToolbar';
 import CommentInputModal from './components/CommentInputModal';
-import TranscriptionUI from './components/TranscriptionUI';
+import AiSidekick from './components/AiSidekick';
 import { translations, Language } from './lib/translations';
 
 
@@ -59,11 +59,18 @@ export interface ImageOptions {
     src: string;
     width: string;
     height: string;
-    align: 'none' | 'left' | 'center' | 'right';
+    align: 'none' | 'left' | 'center' | 'right' | 'absolute';
 }
 
 export type PageSize = 'Letter' | 'A4' | 'Legal';
 export type PageOrientation = 'portrait' | 'landscape';
+
+export type ChatMessage = {
+    role: 'user' | 'model';
+    text: string;
+    isThinking?: boolean;
+    sources?: any[];
+};
 
 const AUTOSAVE_INTERVAL = 2500; // 2.5 seconds
 
@@ -103,7 +110,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<'editor' | 'savedDocuments'>('editor');
   const [documents, setDocuments] = useState<Doc[]>([]);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
-  const [content, setContent] = useState<string>('<p>...</p>');
+  const [content, setContent] = useState<string>('<p><br></p>');
   const [comments, setComments] = useState<Comment[]>([]);
   
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
@@ -117,7 +124,7 @@ const App: React.FC = () => {
   const [isCommentsSidebarVisible, setIsCommentsSidebarVisible] = useState(false);
   const [isSpecialCharVisible, setIsSpecialCharVisible] = useState(false);
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
-  const [isTranscriptionUIActive, setIsTranscriptionUIActive] = useState(false);
+  const [isAiSidekickVisible, setIsAiSidekickVisible] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -137,7 +144,6 @@ const App: React.FC = () => {
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
   const autoSaveTimerRef = useRef<number | null>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const aiRef = useRef<GoogleGenAI | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -258,9 +264,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElement) {
+        const activeElement = document.activeElement as HTMLElement;
+
+        // If focus is on an input or textarea, don't delete the selected element.
+        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
+            return;
+        }
+
         // Check if the focus is inside an editable area of the selected element
-        const activeElement = document.activeElement;
-        const isEditingShapeText = selectedElement.contains(activeElement) && (activeElement as HTMLElement)?.isContentEditable;
+        const isEditingShapeText = selectedElement.contains(activeElement) && activeElement?.isContentEditable;
 
         // If editing text inside a shape (like a textbox), don't delete the whole shape
         if (isEditingShapeText) {
@@ -337,7 +349,7 @@ const App: React.FC = () => {
   };
 
   const handleNewDocument = () => {
-    setContent('<p>...</p>');
+    setContent('<p><br></p>');
     setComments([]);
     setCurrentDocId(null);
     setLastSaved(null);
@@ -347,6 +359,7 @@ const App: React.FC = () => {
     setEditingElement(null);
     setSelectedElement(null);
     setFloatingToolbar(null);
+    setIsAiSidekickVisible(false);
     setPageSize('Letter');
     setPageOrientation('portrait');
     focusEditor();
@@ -404,6 +417,7 @@ const App: React.FC = () => {
       setEditingElement(null);
       setSelectedElement(null);
       setFloatingToolbar(null);
+      setIsAiSidekickVisible(false);
       setView('editor');
     }
   };
@@ -548,38 +562,60 @@ const App: React.FC = () => {
     focusEditor();
   };
   
-  const handleApplyImageSettings = (options: ImageOptions, elementToUpdate: HTMLImageElement | null) => {
+  const handleApplyImageSettings = (options: ImageOptions, elementToUpdate: HTMLImageElement | null, keepPanelOpen = false) => {
     const { src, width, height, align } = options;
     const applyStyles = (el: HTMLImageElement) => {
         el.style.width = width ? `${width}px` : 'auto';
         el.style.height = height ? `${height}px` : 'auto';
+        
+        // Reset all positioning styles
         el.style.float = 'none';
         el.style.display = '';
         el.style.margin = '';
         el.style.position = '';
         el.style.top = '';
         el.style.left = '';
+        el.style.zIndex = '';
 
         if (el.parentElement?.dataset.wrapper === 'image-center-wrapper') {
           const parent = el.parentElement;
           const grandparent = parent.parentElement;
-          grandparent?.insertBefore(el, parent);
-          grandparent?.removeChild(parent);
+          if (grandparent) {
+            grandparent.insertBefore(el, parent);
+            grandparent.removeChild(parent);
+          }
         }
 
-        if (align === 'left' || align === 'right') {
-            el.style.float = align;
-            el.style.margin = align === 'left' ? '0.5rem 1rem 0.5rem 0' : '0.5rem 0 0.5rem 1rem';
-        } else if (align === 'center') {
-            el.style.display = 'block';
-            el.style.margin = '0.5rem auto';
-        } else {
-             el.style.display = 'inline';
+        switch(align) {
+            case 'left':
+                el.style.float = 'left';
+                el.style.margin = '0.5rem 1rem 0.5rem 0';
+                break;
+            case 'right':
+                el.style.float = 'right';
+                el.style.margin = '0.5rem 0 0.5rem 1rem';
+                break;
+            case 'center':
+                el.style.display = 'block';
+                el.style.margin = '0.5rem auto';
+                break;
+            case 'absolute':
+                el.style.position = 'absolute';
+                el.style.top = el.style.top || '100px';
+                el.style.left = el.style.left || '100px';
+                el.style.zIndex = '10';
+                break;
+            case 'none':
+            default:
+                el.style.display = 'inline';
+                break;
         }
     }
 
     if (elementToUpdate) {
-        elementToUpdate.src = src;
+        if (elementToUpdate.src !== src) {
+          elementToUpdate.src = src;
+        }
         applyStyles(elementToUpdate)
     } else {
         restoreSelection();
@@ -591,8 +627,13 @@ const App: React.FC = () => {
             applyStyles(newImg);
         }
     }
-    setActivePanel(null);
-    setEditingElement(null);
+    if (editorRef.current) {
+        handleContentChange(editorRef.current.innerHTML);
+    }
+    if (!keepPanelOpen) {
+      setActivePanel(null);
+      setEditingElement(null);
+    }
   };
 
   const handleInsertShape = (shapeType: ShapeType) => {
@@ -809,7 +850,8 @@ const App: React.FC = () => {
 
     if (document.queryCommandState('bold') !== copiedFormatting.bold) document.execCommand('bold');
     if (document.queryCommandState('italic') !== copiedFormatting.italic) document.execCommand('italic');
-    if (document.queryCommandState('underline') !== copiedFormatting.underline) document.execCommand('strikethrough') !== copiedFormatting.strikethrough) document.execCommand('strikethrough');
+    if (document.queryCommandState('underline') !== copiedFormatting.underline) document.execCommand('underline');
+    if (document.queryCommandState('strikethrough') !== copiedFormatting.strikethrough) document.execCommand('strikethrough');
 
     setIsFormatPainterActive(false);
     setCopiedFormatting(null);
@@ -850,6 +892,7 @@ const App: React.FC = () => {
     setSelectedElement(element || null);
     setActivePanel(panel);
     setIsCommentsSidebarVisible(false);
+    setIsAiSidekickVisible(false);
     setFloatingToolbar(null);
   }
 
@@ -908,69 +951,6 @@ const App: React.FC = () => {
     setFloatingToolbar(null);
     focusEditor(); // Refocus editor to be safe
   };
-
-  const handleAnalyzeImage = () => {
-    saveSelection();
-    imageInputRef.current?.click();
-  };
-
-  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !aiRef.current) return;
-  
-    setToast(t('toasts.aiAnalyzing'));
-    setIsAnalyzing(true);
-  
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const base64Data = (reader.result as string).split(',')[1];
-        
-        const imagePart = {
-          inlineData: {
-            mimeType: file.type,
-            data: base64Data,
-          },
-        };
-  
-        const textPart = {
-          text: "Describe this image in detail."
-        };
-  
-        const response = await aiRef.current!.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: { parts: [imagePart, textPart] },
-        });
-
-        const analysisText = response.text.replace(/\n/g, '<br />');
-
-        restoreSelection();
-        document.execCommand('insertHTML', false, `<p>${analysisText}</p>`);
-
-      } catch (error) {
-        console.error("Image analysis failed:", error);
-        setToast(t('toasts.aiAnalysisError'));
-      } finally {
-        setIsAnalyzing(false);
-        // Reset the input value to allow selecting the same file again
-        if (imageInputRef.current) {
-          imageInputRef.current.value = "";
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-  
-  const handleToggleTranscriptionUI = () => {
-      saveSelection();
-      setIsTranscriptionUIActive(prev => !prev);
-  }
-
-  const handleInsertTranscription = (text: string) => {
-      restoreSelection();
-      document.execCommand('insertHTML', false, `<p>${text.replace(/\n/g, '<br />')}</p>`);
-      setIsTranscriptionUIActive(false);
-  }
 
   const stopReadingAloud = useCallback(() => {
     if (audioSourceRef.current) {
@@ -1095,6 +1075,52 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAiImageEdit = async (prompt: string, imageElement: HTMLImageElement) => {
+    if (!aiRef.current || !prompt || !imageElement) return;
+
+    setIsAnalyzing(true);
+    setToast(t('toasts.aiEditingImage'));
+    try {
+        // Convert image src to base64
+        const response = await fetch(imageElement.src);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+            const base64Data = (reader.result as string).split(',')[1];
+            
+            const imagePart = {
+                inlineData: { data: base64Data, mimeType: blob.type },
+            };
+            const textPart = { text: prompt };
+
+            const editResponse = await aiRef.current!.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: { parts: [imagePart, textPart] },
+                config: { responseModalities: [Modality.IMAGE] },
+            });
+            
+            for (const part of editResponse.candidates[0].content.parts) {
+              if (part.inlineData) {
+                const base64ImageBytes: string = part.inlineData.data;
+                const newSrc = `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+                imageElement.src = newSrc;
+                handleContentChange(editorRef.current!.innerHTML);
+                setToast(t('toasts.aiImageEdited'));
+                return;
+              }
+            }
+            throw new Error("No image data in response");
+        };
+    } catch (error) {
+        console.error("AI image edit failed:", error);
+        setToast(t('toasts.aiError'));
+    } finally {
+        setIsAnalyzing(false);
+    }
+  };
+
+
   const pageDimensions: Record<PageSize, { width: string; height: string }> = {
     Letter: { width: '8.5in', height: '11in' },
     A4: { width: '8.27in', height: '11.69in' },
@@ -1134,6 +1160,12 @@ const App: React.FC = () => {
                   onShowComments={() => {
                     setIsCommentsSidebarVisible(prev => !prev);
                     setActivePanel(null);
+                    setIsAiSidekickVisible(false);
+                  }}
+                  onToggleAiSidekick={() => {
+                      setIsAiSidekickVisible(prev => !prev);
+                      setActivePanel(null);
+                      setIsCommentsSidebarVisible(false);
                   }}
                   onOpenSpecialCharacters={() => { saveSelection(); setIsSpecialCharVisible(true); }}
                   isSaving={isSaving}
@@ -1143,8 +1175,6 @@ const App: React.FC = () => {
                   onSetPageOrientation={setPageOrientation}
                   onInsertPageBreak={handleInsertPageBreak}
                   onSetLanguage={setLanguage}
-                  onAnalyzeImage={handleAnalyzeImage}
-                  onToggleTranscription={handleToggleTranscriptionUI}
                   onReadAloud={handleReadAloud}
                   isReadingAloud={isReadingAloud}
                   t={t}
@@ -1153,6 +1183,11 @@ const App: React.FC = () => {
                   editorRef={editorRef} 
                   onCopyFormatting={handleCopyFormatting} 
                   isFormatPainterActive={isFormatPainterActive}
+                  onToggleAiSidekick={() => {
+                      setIsAiSidekickVisible(prev => !prev);
+                      setActivePanel(null);
+                      setIsCommentsSidebarVisible(false);
+                  }}
                   t={t}
                 />
             </header>
@@ -1197,7 +1232,19 @@ const App: React.FC = () => {
                 </main>
                 
                 <div className="flex-shrink-0">
-                    {activePanel ? (
+                    {isAiSidekickVisible ? (
+                        <AiSidekick
+                            ai={aiRef.current}
+                            onClose={() => setIsAiSidekickVisible(false)}
+                            onInsertText={(text) => {
+                                saveSelection();
+                                restoreSelection();
+                                document.execCommand('insertHTML', false, text);
+                            }}
+                            setToast={setToast}
+                            t={t}
+                        />
+                    ) : activePanel ? (
                         <SettingsSidebar
                             activePanel={activePanel}
                             editingElement={editingElement}
@@ -1208,6 +1255,7 @@ const App: React.FC = () => {
                             onInsertTable={handleInsertTable}
                             onUpdateElementStyle={handleUpdateElementStyle}
                             onChangeZIndex={handleChangeZIndex}
+                            onAiImageEdit={(prompt) => handleAiImageEdit(prompt, editingElement as HTMLImageElement)}
                             t={t}
                         />
                     ) : isCommentsSidebarVisible ? (
@@ -1277,22 +1325,6 @@ const App: React.FC = () => {
       />
       <SpecialCharactersModal isOpen={isSpecialCharVisible} onClose={() => setIsSpecialCharVisible(false)} onInsert={handleInsertCharacter} t={t} />
       <CommentInputModal isOpen={isCommentModalVisible} onClose={() => setIsCommentModalVisible(false)} onSubmit={handleAddComment} t={t} />
-      {isTranscriptionUIActive && (
-          <TranscriptionUI
-              ai={aiRef.current}
-              onClose={() => setIsTranscriptionUIActive(false)}
-              onInsert={handleInsertTranscription}
-              setToast={setToast}
-              t={t}
-          />
-      )}
-      <input
-        type="file"
-        ref={imageInputRef}
-        onChange={handleImageFileChange}
-        accept="image/*"
-        className="hidden"
-      />
     </div>
   );
 };

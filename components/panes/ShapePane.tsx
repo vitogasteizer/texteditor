@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 
 interface ShapePaneProps {
@@ -33,6 +32,7 @@ const getTextColorForBackground = (rgbaBg: string): string => {
 
 const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, onChangeZIndex, t }) => {
   const [styles, setStyles] = useState<React.CSSProperties>({});
+  const [wrapping, setWrapping] = useState<'absolute' | 'left' | 'right'>('absolute');
   const shapeType = editingElement.dataset.shapeType;
 
   const parseStyle = (value: string | undefined, defaultValue: number): number => {
@@ -115,8 +115,18 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
             opacity: computed.opacity,
             transform: computed.transform,
             boxShadow: computed.boxShadow,
+            position: computed.position,
+            float: computed.float,
         };
         setStyles(initialStyles);
+
+        if (computed.position === 'absolute') {
+            setWrapping('absolute');
+        } else if (computed.float === 'left') {
+            setWrapping('left');
+        } else if (computed.float === 'right') {
+            setWrapping('right');
+        }
     }
   }, [editingElement]);
   
@@ -156,6 +166,31 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
         return updatedState;
     });
   }, [editingElement, onUpdateStyle, shapeType]);
+
+  const handleWrappingChange = (mode: 'absolute' | 'left' | 'right') => {
+    setWrapping(mode);
+    let newStyles: React.CSSProperties = {};
+    if (mode === 'absolute') {
+        newStyles = {
+            // FIX: Assert 'absolute' as a constant to match the literal type expected by CSSProperties.
+            position: 'absolute' as const,
+            // FIX: Assert 'none' as a constant to match the literal type expected by CSSProperties.
+            float: 'none' as const,
+            margin: '',
+            top: styles.top || '100px',
+            left: styles.left || '100px'
+        };
+    } else { // left or right
+        newStyles = {
+            position: 'relative',
+            float: mode,
+            margin: mode === 'left' ? '0.5rem 1rem 0.5rem 0' : '0.5rem 0 0.5rem 1rem',
+            top: '',
+            left: ''
+        };
+    }
+    handleStyleChange(newStyles);
+  };
   
   const handleShadowChange = (prop: keyof ShadowState, value: any) => {
       const currentShadow = parseBoxShadow(styles.boxShadow as string);
@@ -177,17 +212,31 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
   
   return (
     <div className="space-y-4 text-sm">
+        <details className="space-y-2" open>
+            <summary className="font-medium cursor-pointer">{t('panes.shape.wrapping')}</summary>
+            <div className="pt-2">
+                <select
+                    value={wrapping}
+                    onChange={(e) => handleWrappingChange(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                    <option value="absolute">{t('panes.shape.wrappingOptions.inFront')}</option>
+                    <option value="left">{t('panes.shape.wrappingOptions.squareLeft')}</option>
+                    <option value="right">{t('panes.shape.wrappingOptions.squareRight')}</option>
+                </select>
+            </div>
+        </details>
         {/* Position & Size */}
         <details className="space-y-2" open>
             <summary className="font-medium cursor-pointer">{t('panes.shape.transform')}</summary>
             <div className="grid grid-cols-2 gap-4 pt-2">
                 <div>
                     <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.left')}</label>
-                    <input type="number" value={parseStyle(styles.left as string, 0)} onChange={e => handleStyleChange({ left: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
+                    <input type="number" value={parseStyle(styles.left as string, 0)} onChange={e => handleStyleChange({ left: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 disabled:opacity-50" disabled={wrapping !== 'absolute'}/>
                 </div>
                  <div>
                     <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.top')}</label>
-                    <input type="number" value={parseStyle(styles.top as string, 0)} onChange={e => handleStyleChange({ top: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
+                    <input type="number" value={parseStyle(styles.top as string, 0)} onChange={e => handleStyleChange({ top: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 disabled:opacity-50" disabled={wrapping !== 'absolute'}/>
                 </div>
                  <div>
                     <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.width')}</label>
@@ -311,8 +360,8 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
         <details className="space-y-2" open>
             <summary className="font-medium cursor-pointer">{t('panes.shape.arrange')}</summary>
             <div className="flex items-center gap-2 pt-2">
-                <button onClick={() => onChangeZIndex(editingElement, 'front')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">{t('panes.image.bringForward')}</button>
-                <button onClick={() => onChangeZIndex(editingElement, 'back')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">{t('panes.image.sendBackward')}</button>
+                <button disabled={wrapping !== 'absolute'} onClick={() => onChangeZIndex(editingElement, 'front')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">{t('panes.image.bringForward')}</button>
+                <button disabled={wrapping !== 'absolute'} onClick={() => onChangeZIndex(editingElement, 'back')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">{t('panes.image.sendBackward')}</button>
             </div>
         </details>
     </div>

@@ -15,10 +15,11 @@ interface SettingsSidebarProps {
   onClose: () => void;
   onReplaceAll: (find: string, replace: string, options: { matchCase: boolean; wholeWord: boolean }) => void;
   onApplyLink: (data: { url: string; text: string }, elementToUpdate: HTMLAnchorElement | null) => void;
-  onApplyImageSettings: (options: ImageOptions, elementToUpdate: HTMLImageElement | null) => void;
+  onApplyImageSettings: (options: ImageOptions, elementToUpdate: HTMLImageElement | null, keepPanelOpen?: boolean) => void;
   onInsertTable: (rows: number, cols: number) => void;
   onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
   onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
+  onAiImageEdit: (prompt: string) => void;
   t: (key: string) => string;
 }
 
@@ -45,7 +46,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = (props) => {
             </header>
             <div className="flex-grow p-4 overflow-y-auto">
                 {activePanel === 'link' && <LinkPane onApplyLink={props.onApplyLink} onClose={onClose} editingElement={editingElement as HTMLAnchorElement | null} t={t} />}
-                {activePanel === 'image' && <ImagePane onApplyImageSettings={props.onApplyImageSettings} onClose={onClose} editingElement={editingElement as HTMLImageElement | null} onUpdateElementStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} t={t} />}
+                {activePanel === 'image' && <ImagePane onApplyImageSettings={props.onApplyImageSettings} onClose={onClose} editingElement={editingElement as HTMLImageElement | null} onUpdateElementStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} onAiImageEdit={props.onAiImageEdit} t={t} />}
                 {activePanel === 'table' && <TablePane onInsertTable={props.onInsertTable} t={t} />}
                 {activePanel === 'findReplace' && <FindReplacePane onReplaceAll={props.onReplaceAll} t={t} />}
                 {activePanel === 'shape' && editingElement && <ShapePane editingElement={editingElement} onUpdateStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} t={t} />}

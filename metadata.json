@@ -2,6 +2,7 @@
   "name": "ონლაინ ტექსტური რედაქტორი",
   "description": "მარტივი და უფასო ონლაინ ტექსტური რედაქტორი ძირითადი ფორმატირებისთვის. დამოკიდებულებების გარეშე, მზად არის GitHub Pages-ზე განსათავსებლად.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }

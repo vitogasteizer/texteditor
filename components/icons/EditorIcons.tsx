@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const iconProps = {
@@ -48,7 +49,12 @@ export const RedoIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
 );
 export const ClearFormattingIcon: React.FC = () => (
-    <svg {...iconProps} viewBox="0 0 24 24"><path d="M9.75 6.5H18.25M11 6.5L14 18M15.25 18H6.75M19 4L5 4"></path></svg>
+    <svg {...iconProps} viewBox="0 0 24 24">
+        <path d="M4 7V4h16v3"/>
+        <path d="M5 20h14"/>
+        <path d="M12 4v16"/>
+        <line x1="21" y1="4" x2="3" y2="20"/>
+    </svg>
 );
 export const MenuIcon: React.FC = () => (
   <svg {...iconProps}><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -66,7 +72,11 @@ export const TextColorIcon: React.FC = () => (
     <svg {...iconProps}><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
 );
 export const BgColorIcon: React.FC = () => (
-    <svg {...iconProps} viewBox="0 0 24 24"><path d="M12.5 7.5L10 13h4l-2.5 5.5"/><path d="M14 3.75v1.5a.75.75 0 0 0 .75.75h1.5M19 8.25V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5Z"/></svg>
+    <svg {...iconProps} viewBox="0 0 24 24">
+        <path d="m9 11-6 6v3h9l3-3"/>
+        <path d="m22 6-6 6-3-3 6-6Z"/>
+        <path d="m18 10 3-3"/>
+    </svg>
 );
 export const LineHeightIcon: React.FC = () => (
     <svg {...iconProps}><path d="M3 12h18M3 6h12M3 18h12M19 3l3 3-3 3M19 21l3-3-3-3"/></svg>
@@ -88,9 +98,6 @@ export const Trash2Icon: React.FC<{className?: string}> = ({className}) => (
 );
 export const EditIcon: React.FC<{className?: string}> = ({className}) => (
   <svg {...iconProps} className={className || iconProps.className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-);
-export const ArrowLeftIcon: React.FC = () => (
-  <svg {...iconProps}><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
 );
 export const ZoomInIcon: React.FC<{className?: string}> = ({className}) => (
     <svg {...iconProps} className={className || iconProps.className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
@@ -132,8 +139,8 @@ export const ClipboardIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) =>
 export const SelectAllIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeDasharray="4" strokeDashoffset="1"></rect></svg>
 );
-export const SearchIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
-  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+export const SearchIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );
 export const LinkIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -156,9 +163,6 @@ export const MessageSquareIcon: React.FC<{isMenuIcon?: boolean; className?: stri
 export const CodeIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
 );
-export const TerminalIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
-  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-);
 export const BarChartIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><line x1="12" x2="12" y1="20" y2="10"></line><line x1="18" x2="18" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="16"></line></svg>
 );
@@ -173,15 +177,6 @@ export const InfoIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
 );
 export const OmegaIcon: React.FC<{ isMenuIcon?: boolean }> = ({ isMenuIcon }) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M4 18h16M4 18c0-4.4 3.6-8 8-8s8 3.6 8 8M4 18c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg>
-);
-export const AlignStartHorizontalIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg {...iconProps} className={className || iconProps.className}><rect x="3" y="8" width="8" height="8" rx="1"/><path d="M3 4v2"/><path d="M21 4v2"/><path d="M16 4v16"/></svg>
-);
-export const AlignCenterHorizontalIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg {...iconProps} className={className || iconProps.className}><path d="M2 12h20"/><path d="M10 18v-2a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/><path d="M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/></svg>
-);
-export const AlignEndHorizontalIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg {...iconProps} className={className || iconProps.className}><rect x="13" y="8" width="8" height="8" rx="1"/><path d="M21 4v2"/><path d="M3 4v2"/><path d="M8 4v16"/></svg>
 );
 export const PdfIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M10.4 12.6c.2.8.9 1.4 1.7 1.4 1.1 0 1.9-.9 1.9-2s-.8-2-1.9-2c-.5 0-1 .2-1.3.5"/><path d="M15 12h1.5a2 2 0 0 1 0 4h-1.5v-2.5"/><path d="M4 12h2a2 2 0 0 1 0 4H4v-4Z"/></svg>
@@ -233,4 +228,19 @@ export const SmileIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = (
 );
 export const Wand2Icon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
     <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+);
+export const BotIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg {...iconProps} className={className || iconProps.className}><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M12 18v-2"/><path d="M9 16h6"/></svg>
+);
+export const MapIcon: React.FC<{isMenuIcon?: boolean, className?: string}> = ({isMenuIcon, className}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" x2="8" y1="2" y2="18"/><line x1="16" x2="16" y1="6" y2="22"/></svg>
+);
+export const BrainCircuitIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg {...iconProps} className={className || iconProps.className}><path d="M12 2a2.5 2.5 0 0 1 3 3.2l.2.3a2.5 2.5 0 0 1 2.5 2.5v.5a2.5 2.5 0 0 1-2.5 2.5l-.3.2a2.5 2.5 0 0 1-3.2 3m0 0a2.5 2.5 0 0 1-3-3.2l-.2-.3a2.5 2.5 0 0 1-2.5-2.5v-.5a2.5 2.5 0 0 1 2.5-2.5l.3-.2a2.5 2.5 0 0 1 3.2-3m0 0V2m0 16.5V22m-6.5-5.5.4-.4m12.2.4-.4-.4M3.8 9.2l.4.4M20.2 9.2l-.4.4M12 12v3.5"/><path d="M12 7.5V6"/><circle cx="12" cy="12" r="2.5"/><path d="M3.5 14.5A2.5 2.5 0 0 0 6 17v0a2.5 2.5 0 0 0 2.5-2.5"/><path d="M20.5 14.5A2.5 2.5 0 0 1 18 17v0a2.5 2.5 0 0 1-2.5-2.5"/><path d="M3.5 9.5A2.5 2.5 0 0 1 6 7v0a2.5 2.5 0 0 1 2.5 2.5"/><path d="M20.5 9.5A2.5 2.5 0 0 0 18 7v0a2.5 2.5 0 0 0-2.5 2.5"/></svg>
+);
+export const SendIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg {...iconProps} className={className || iconProps.className}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+);
+export const StopCircleIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg {...iconProps} className={className || iconProps.className}><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
 );

@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ImageOptions } from '../../App';
-import { AlignLeftIcon, AlignStartHorizontalIcon, AlignCenterHorizontalIcon, AlignEndHorizontalIcon } from '../icons/EditorIcons';
+import { SparklesIcon } from '../icons/EditorIcons';
 
 interface ImagePaneProps {
-  onApplyImageSettings: (options: ImageOptions, elementToUpdate: HTMLImageElement | null) => void;
+  onApplyImageSettings: (options: ImageOptions, elementToUpdate: HTMLImageElement | null, keepPanelOpen?: boolean) => void;
   onClose: () => void;
   editingElement: HTMLImageElement | null;
   onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
   onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
+  onAiImageEdit: (prompt: string) => void;
   t: (key: string) => string;
 }
 
@@ -50,10 +51,11 @@ const parseBoxShadow = (boxShadow: string | undefined): ShadowState => {
       };
 };
 
-const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElement, onUpdateElementStyle, onChangeZIndex, t }) => {
+const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElement, onUpdateElementStyle, onChangeZIndex, onAiImageEdit, t }) => {
     const [sourceType, setSourceType] = useState<'url' | 'upload'>('url');
     const [url, setUrl] = useState('');
     const [fileSrc, setFileSrc] = useState('');
+    const [aiEditPrompt, setAiEditPrompt] = useState('');
     
     const [styles, setStyles] = useState({
         width: '',
@@ -83,10 +85,18 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
 
             const float = computedStyle.float;
             const display = computedStyle.display;
+            const position = computedStyle.position;
             let currentAlign: ImageOptions['align'] = 'none';
-            if (float === 'left') currentAlign = 'left';
-            else if (float === 'right') currentAlign = 'right';
-            else if (display === 'block') currentAlign = 'center';
+            
+            if (position === 'absolute') {
+                currentAlign = 'absolute';
+            } else if (float === 'left') {
+                currentAlign = 'left';
+            } else if (float === 'right') {
+                currentAlign = 'right';
+            } else if (display === 'block') {
+                currentAlign = 'center';
+            }
             
             setStyles({
                 width: computedStyle.width.replace('px', ''),
@@ -136,6 +146,26 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
             onApplyImageSettings({ src, width: styles.width, height: styles.height, align: styles.align }, editingElement);
         }
     };
+    
+    const handleAiEdit = () => {
+        if(aiEditPrompt.trim()) {
+            onAiImageEdit(aiEditPrompt);
+            setAiEditPrompt('');
+        }
+    };
+
+    const handleAlignmentChange = (align: ImageOptions['align']) => {
+        if (editingElement) {
+            const options: ImageOptions = {
+                src: editingElement.src,
+                width: editingElement.style.width.replace(/px$/, ''),
+                height: editingElement.style.height.replace(/px$/, ''),
+                align,
+            };
+            onApplyImageSettings(options, editingElement, true);
+            setStyles(s => ({ ...s, align }));
+        }
+    };
 
     const isApplyDisabled = sourceType === 'url' ? !url.trim() : !fileSrc;
     const currentRotation = parseTransform(styles.transform);
@@ -143,6 +173,29 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
 
     return (
         <div className="space-y-4 text-sm">
+            {isEditing && (
+                <details className="space-y-2" open>
+                    <summary className="font-medium cursor-pointer">{t('panes.image.aiEdit')}</summary>
+                    <div className="pt-2">
+                        <label htmlFor="ai-image-edit" className="block text-xs text-gray-500 mb-1">{t('panes.image.aiEditPrompt')}</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                id="ai-image-edit"
+                                value={aiEditPrompt}
+                                onChange={e => setAiEditPrompt(e.target.value)}
+                                placeholder={t('panes.image.aiEditPlaceholder')}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAiEdit()}
+                                className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700"
+                            />
+                            <button onClick={handleAiEdit} className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50" disabled={!aiEditPrompt.trim()}>
+                                <SparklesIcon />
+                            </button>
+                        </div>
+                    </div>
+                </details>
+            )}
+
             {!isEditing && (
               <>
                 <div className="flex items-center gap-2">
@@ -215,13 +268,19 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                     />
                 </div>
                 <div>
-                    <label className="block text-xs text-gray-500 mb-1">{t('panes.image.alignment')}</label>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setStyles(s=>({...s, align: 'none'}))} title={t('panes.image.inline')} className={`p-2 rounded-md ${styles.align === 'none' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignLeftIcon /></button>
-                        <button onClick={() => setStyles(s=>({...s, align: 'left'}))} title={t('panes.image.floatLeft')} className={`p-2 rounded-md ${styles.align === 'left' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignStartHorizontalIcon /></button>
-                        <button onClick={() => setStyles(s=>({...s, align: 'center'}))} title={t('panes.image.center')} className={`p-2 rounded-md ${styles.align === 'center' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignCenterHorizontalIcon /></button>
-                        <button onClick={() => setStyles(s=>({...s, align: 'right'}))} title={t('panes.image.floatRight')} className={`p-2 rounded-md ${styles.align === 'right' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignEndHorizontalIcon /></button>
-                    </div>
+                    <label htmlFor="image-wrapping" className="block text-xs text-gray-500 mb-1">{t('panes.image.wrapping')}</label>
+                    <select
+                        id="image-wrapping"
+                        value={styles.align}
+                        onChange={e => handleAlignmentChange(e.target.value as ImageOptions['align'])}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                        <option value="none">{t('panes.image.wrappingOptions.inline')}</option>
+                        <option value="left">{t('panes.image.wrappingOptions.squareLeft')}</option>
+                        <option value="right">{t('panes.image.wrappingOptions.squareRight')}</option>
+                        <option value="center">{t('panes.image.wrappingOptions.topBottom')}</option>
+                        <option value="absolute">{t('panes.image.wrappingOptions.inFront')}</option>
+                    </select>
                 </div>
             </details>
             
@@ -280,7 +339,7 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                 </div>
             </details>
 
-            {isEditing && (
+            {isEditing && styles.align === 'absolute' && (
                  <details className="space-y-2" open>
                     <summary className="font-medium cursor-pointer">{t('panes.image.arrange')}</summary>
                     <div className="flex items-center gap-2 pt-2">

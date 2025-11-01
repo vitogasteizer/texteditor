@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 interface ObjectWrapperProps {
@@ -21,6 +22,8 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
     startTop: 0,
     handle: ''
   });
+
+  const isAbsolute = targetElement.style.position === 'absolute';
 
   useEffect(() => {
     const updatePosition = () => {
@@ -52,8 +55,6 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
     e.preventDefault();
     e.stopPropagation();
     
-    if (!containerRef.current) return;
-    
     const interaction = interactionRef.current;
     interaction.startX = e.clientX;
     interaction.startY = e.clientY;
@@ -66,24 +67,10 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
       interaction.startLeft = targetElement.offsetLeft;
       interaction.startTop = targetElement.offsetTop;
     } else {
+      if (!isAbsolute) return;
       interaction.isDragging = true;
-       if (targetElement.style.position !== 'absolute') {
-            const rect = targetElement.getBoundingClientRect();
-            const containerRect = containerRef.current.getBoundingClientRect();
-            
-            const newTop = rect.top - containerRect.top + containerRef.current.scrollTop;
-            const newLeft = rect.left - containerRect.left + containerRef.current.scrollLeft;
-
-            targetElement.style.position = 'absolute';
-            targetElement.style.top = `${newTop}px`;
-            targetElement.style.left = `${newLeft}px`;
-            
-            interaction.startLeft = newLeft;
-            interaction.startTop = newTop;
-        } else {
-            interaction.startLeft = targetElement.offsetLeft;
-            interaction.startTop = targetElement.offsetTop;
-        }
+      interaction.startLeft = targetElement.offsetLeft;
+      interaction.startTop = targetElement.offsetTop;
     }
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -106,27 +93,23 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
     } else if (interaction.isResizing) {
         let newWidth = interaction.startWidth;
         let newHeight = interaction.startHeight;
-        let newLeft = interaction.startLeft;
-        let newTop = interaction.startTop;
 
         if (interaction.handle.includes('e')) newWidth += dx;
-        if (interaction.handle.includes('w')) {
-            newWidth -= dx;
-            newLeft += dx;
-        }
+        if (interaction.handle.includes('w')) newWidth -= dx;
         if (interaction.handle.includes('s')) newHeight += dy;
-        if (interaction.handle.includes('n')) {
-            newHeight -= dy;
-            newTop += dy;
-        }
+        if (interaction.handle.includes('n')) newHeight -= dy;
+        
+        if (newWidth > 10) newStyles.width = `${newWidth}px`;
+        if (newHeight > 10) newStyles.height = `${newHeight}px`;
 
-        if (newWidth > 10) {
-            newStyles.width = `${newWidth}px`;
-            newStyles.left = `${newLeft}px`;
-        }
-        if (newHeight > 10) {
-            newStyles.height = `${newHeight}px`;
-            newStyles.top = `${newTop}px`;
+        if (isAbsolute) {
+            let newLeft = interaction.startLeft;
+            let newTop = interaction.startTop;
+            if (interaction.handle.includes('w')) newLeft += dx;
+            if (interaction.handle.includes('n')) newTop += dy;
+            
+            if (newWidth > 10) newStyles.left = `${newLeft}px`;
+            if (newHeight > 10) newStyles.top = `${newTop}px`;
         }
     }
     
@@ -141,10 +124,12 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
         const finalStyles: React.CSSProperties = {
             width: targetElement.style.width,
             height: targetElement.style.height,
-            left: targetElement.style.left,
-            top: targetElement.style.top,
-            position: 'absolute', // Ensure position is saved
         };
+        if (isAbsolute) {
+            finalStyles.left = targetElement.style.left;
+            finalStyles.top = targetElement.style.top;
+            finalStyles.position = 'absolute';
+        }
         onUpdate(targetElement, finalStyles);
     }
     
@@ -162,7 +147,7 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
       className="absolute border-2 border-blue-500 pointer-events-none z-20"
       onMouseDown={(e) => handleMouseDown(e)}
       onDoubleClick={onDoubleClick}
-      style={{ pointerEvents: 'auto', cursor: 'move' }}
+      style={{ pointerEvents: 'auto', cursor: isAbsolute ? 'move' : 'default' }}
     >
       {handles.map(handle => (
         <div

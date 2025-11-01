@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, ChevronRightIcon, TextShadowIcon } from './icons/EditorIcons';
+import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, ChevronRightIcon, TextShadowIcon, SparklesIcon } from './icons/EditorIcons';
 import TextShadowDropdown from './TextShadowDropdown';
 
 interface ToolbarProps {
   editorRef: React.RefObject<HTMLDivElement>;
   onCopyFormatting: () => void;
   isFormatPainterActive: boolean;
+  onToggleAiSidekick: () => void;
   t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
 
@@ -246,7 +247,7 @@ const ColorPicker: React.FC<{ onAction: (color: string) => void; tooltip: string
     );
 };
 
-const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormatPainterActive, t }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormatPainterActive, onToggleAiSidekick, t }) => {
     const [toolbarState, setToolbarState] = useState({
         fontName: 'Arial',
         fontSize: '12pt',
@@ -432,8 +433,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
 
 
   return (
-    <div className="p-2 bg-gray-50 dark:bg-gray-800">
-      <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap pb-2 -mb-2">
+    <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+      <div className="flex-1 min-w-0 flex items-center flex-wrap gap-1">
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
           <ToolbarButton onAction={() => executeCommand('undo')} tooltip={t('toolbar.undo')}><UndoIcon /></ToolbarButton>
           <ToolbarButton onAction={() => executeCommand('redo')} tooltip={t('toolbar.redo')}><RedoIcon /></ToolbarButton>
@@ -478,6 +479,11 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
          <div className="flex items-center gap-1">
           <ToolbarButton onAction={() => executeCommand('removeFormat')} tooltip={t('toolbar.clearFormatting')}><ClearFormattingIcon /></ToolbarButton>
         </div>
+      </div>
+      <div className="flex items-center pl-2">
+        <ToolbarButton onAction={onToggleAiSidekick} tooltip={t('toolbar.aiAssistant')}>
+            <SparklesIcon className="text-yellow-500" />
+        </ToolbarButton>
       </div>
       {isTextShadowDropdownOpen && (
           <TextShadowDropdown
