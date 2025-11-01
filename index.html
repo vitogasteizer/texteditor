@@ -10,13 +10,115 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;700;900&family=FiraGO:wght@300;400;500;700;900&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Lobster&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    @media (max-width: 768px) {
+      /* Main container adjustments to prevent overflow issues */
+      .h-screen.flex.flex-col {
+        height: auto;
+      }
+      .flex-grow.flex.flex-col.overflow-hidden {
+        overflow: visible;
+      }
+      main.flex-grow.overflow-auto {
+        overflow: visible;
+      }
+      
+      /* Make the editor page take full width */
+      #editor-page {
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      
+      /* Adjust padding inside the editor itself */
+      #editor-page > div[contenteditable="true"] {
+        padding: 1.5rem 1rem !important;
+      }
+  
+      /* Remove padding around the page container and disable zoom */
+      div.py-12 {
+        padding: 0;
+        transform: none !important; /* Override inline style */
+      }
+      
+      /* Remove the gray background around the page */
+      main.bg-gray-200 {
+        background-color: white;
+      }
+    }
+    /* Handle dark mode for mobile */
+    @media (prefers-color-scheme: dark) {
+      @media (max-width: 768px) {
+        main.dark\\:bg-gray-600 {
+          background-color: #111827; /* Tailwind dark:bg-gray-900 */
+        }
+      }
+    }
+    
+    /* Styles for direct browser printing (Ctrl+P) */
+    @media print {
+      /* Hide non-editor UI elements */
+      header, footer, aside, [class*="Toolbar"], [class*="MenuBar"], [class*="StatusBar"] {
+        display: none !important;
+      }
+
+      /* Reset layout for printing */
+      body, #root, #root > div {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+        background-color: #fff !important;
+      }
+      
+      main.flex-grow {
+         background-color: #fff !important;
+         padding: 0 !important;
+         margin: 0 !important;
+      }
+      
+      /* Remove zoom and centering from page wrapper */
+      main > div[style*="transform"] {
+        transform: none !important;
+        padding: 0 !important;
+      }
+      
+      /* Style the editor page itself for print */
+      #editor-page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: 0 !important;
+      }
+      
+      /* The actual editable content area gets standard print margins */
+      #editor-page > div[contenteditable="true"] {
+        padding: 1in !important;
+      }
+
+      /* Handle the page break correctly */
+      .page-break-indicator {
+        page-break-after: always !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 0 !important;
+        visibility: hidden !important;
+        color: transparent !important;
+      }
+      /* Hide the text inside the indicator for printing */
+      .page-break-indicator * { display: none !important; }
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
   }
 }
 </script>

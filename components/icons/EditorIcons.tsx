@@ -11,14 +11,14 @@ const iconProps = {
 };
 const menuIconProps = { ...iconProps, className: "w-4 h-4 mr-2" };
 
-export const BoldIcon: React.FC = () => (
-  <svg {...iconProps}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>
+export const BoldIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className ?? iconProps.className}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>
 );
-export const ItalicIcon: React.FC = () => (
-  <svg {...iconProps}><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>
+export const ItalicIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className ?? iconProps.className}><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>
 );
-export const UnderlineIcon: React.FC = () => (
-  <svg {...iconProps}><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg>
+export const UnderlineIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className ?? iconProps.className}><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg>
 );
 export const StrikethroughIcon: React.FC = () => (
   <svg {...iconProps}><path d="M16 4H9a3 3 0 0 0-2.83 4"></path><path d="M14 12a4 4 0 0 1 0 8H6"></path><line x1="4" y1="12" x2="20" y2="12"></line></svg>
@@ -59,8 +59,8 @@ export const CloseIcon: React.FC = () => (
 export const ChevronDownIcon: React.FC = () => (
     <svg {...iconProps} className="w-4 h-4 text-gray-600 dark:text-gray-400"><path d="m6 9 6 6 6-6"></path></svg>
 );
-export const ChevronRightIcon: React.FC = () => (
-    <svg {...iconProps} className="w-4 h-4 text-gray-500 dark:text-gray-400"><path d="m9 18 6-6-6-6"></path></svg>
+export const ChevronRightIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg {...iconProps} className={className ?? "w-4 h-4 text-gray-500 dark:text-gray-400"}><path d="m9 18 6-6-6-6"></path></svg>
 );
 export const TextColorIcon: React.FC = () => (
     <svg {...iconProps}><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
@@ -135,8 +135,8 @@ export const SelectAllIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) =>
 export const SearchIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );
-export const LinkIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
-  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+export const LinkIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
 );
 export const LinkOffIcon: React.FC<{className?: string}> = ({className}) => (
     <svg {...iconProps} className={className || iconProps.className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
@@ -150,8 +150,8 @@ export const TableIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
 export const MinusIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
-export const MessageSquareIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
-  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+export const MessageSquareIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
 );
 export const CodeIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
@@ -197,4 +197,40 @@ export const TriangleIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => 
 );
 export const TypeIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+);
+export const SplitSquareVerticalIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M5 8V5c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v3"/><path d="M19 16v3c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2v-3"/><line x1="4" x2="20" y2="12" y1="12"/></svg>
+);
+export const RectangleVerticalIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><rect x="5" y="3" width="14" height="18" rx="2"/></svg>
+);
+export const RectangleHorizontalIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+);
+export const LanguageIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)}><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+);
+export const SparklesIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)} fill="currentColor" stroke="currentColor" strokeWidth="1"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z" /></svg>
+);
+export const MicIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className || (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
+);
+export const Volume2Icon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+);
+export const BookTextIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+);
+export const LanguagesIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+);
+export const PenLineIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 5 3 3"/></svg>
+);
+export const SmileIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+);
+export const Wand2Icon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
 );

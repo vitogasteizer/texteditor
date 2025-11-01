@@ -1,13 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-// FIX: Import ChevronRightIcon to fix missing component error.
-import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon } from './icons/EditorIcons';
-import type { ShapeType } from '../App';
+import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, MicIcon, SparklesIcon, Volume2Icon } from './icons/EditorIcons';
+import type { ShapeType, PageSize, PageOrientation } from '../App';
+import type { Language } from '../lib/translations';
 
 type MenuItem =
   | {
       label: string;
-      // FIX: Made action optional to allow menu items that are only containers for submenus.
       action?: () => void;
       icon?: React.ReactNode;
       separator?: false;
@@ -36,6 +35,7 @@ interface MenuBarProps {
   onInsertTable: () => void;
   onInsertShape: (shapeType: ShapeType) => void;
   onInsertHorizontalRule: () => void;
+  onInsertPageBreak: () => void;
   onAddComment: () => void;
   onOpenSourceCode: () => void;
   onOpenWordCount: () => void;
@@ -46,6 +46,14 @@ interface MenuBarProps {
   isSaving: boolean;
   lastSaved: number | null;
   isDocumentSaved: boolean;
+  onSetPageSize: (size: PageSize) => void;
+  onSetPageOrientation: (orientation: PageOrientation) => void;
+  onSetLanguage: (lang: Language) => void;
+  onAnalyzeImage: () => void;
+  onToggleTranscription: () => void;
+  onReadAloud: () => void;
+  isReadingAloud: boolean;
+  t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
 
 const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, items }) => {
@@ -93,6 +101,7 @@ const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, i
                     onClick={() => handleAction(item.action)}
                     className="text-left w-full px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-between"
                     role="menuitem"
+                    disabled={!item.action && !item.items}
                   >
                     <div className="flex items-center">
                       {item.icon}
@@ -182,15 +191,15 @@ const MobileAccordionItem: React.FC<{
     );
 };
 
-const AutoSaveStatus: React.FC<{ isSaving: boolean; lastSaved: number | null; isDocumentSaved: boolean }> = ({ isSaving, lastSaved, isDocumentSaved }) => {
+const AutoSaveStatus: React.FC<{ isSaving: boolean; lastSaved: number | null; isDocumentSaved: boolean; t: (key: string, replacements?: { [key: string]: string | number }) => string; }> = ({ isSaving, lastSaved, isDocumentSaved, t }) => {
     if (!isDocumentSaved) return null;
 
     let statusText = '';
     if (isSaving) {
-        statusText = 'Saving...';
+        statusText = t('autosave.saving');
     } else if (lastSaved) {
         const time = new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        statusText = `Last saved at ${time}`;
+        statusText = t('autosave.savedAt', { time });
     }
 
     return (
@@ -201,6 +210,7 @@ const AutoSaveStatus: React.FC<{ isSaving: boolean; lastSaved: number | null; is
 };
 
 const MenuBar: React.FC<MenuBarProps> = (props) => {
+    const { t } = props;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
@@ -209,68 +219,116 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
     };
 
     const fileMenuItems: MenuItem[] = [
-        { label: 'New Document', action: props.onNewDocument, icon: <FilePlusIcon isMenuIcon /> },
-        { label: 'Save', action: props.onSave, icon: <SaveIcon isMenuIcon /> },
-        { label: 'View Saved', action: props.onViewSaved, icon: <FolderIcon isMenuIcon /> },
+        { label: t('menu.fileNew'), action: props.onNewDocument, icon: <FilePlusIcon isMenuIcon /> },
+        { label: t('menu.fileSave'), action: props.onSave, icon: <SaveIcon isMenuIcon /> },
+        { label: t('menu.fileViewSaved'), action: props.onViewSaved, icon: <FolderIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Export to Word', action: props.onExportToWord, icon: <DownloadIcon isMenuIcon /> },
-        { label: 'Export to PDF', action: props.onExportToPdf, icon: <PdfIcon isMenuIcon /> },
+        { label: t('menu.fileExportWord'), action: props.onExportToWord, icon: <DownloadIcon isMenuIcon /> },
+        { label: t('menu.fileExportPdf'), action: props.onExportToPdf, icon: <PdfIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Print...', action: props.onPrint, icon: <PrinterIcon isMenuIcon /> },
+        { label: t('menu.filePrint'), action: props.onPrint, icon: <PrinterIcon isMenuIcon /> },
     ];
 
     const editMenuItems: MenuItem[] = [
-        { label: 'Undo', action: () => props.onEditAction('undo'), icon: <UndoIcon isMenuIcon /> },
-        { label: 'Redo', action: () => props.onEditAction('redo'), icon: <RedoIcon isMenuIcon /> },
+        { label: t('menu.editUndo'), action: () => props.onEditAction('undo'), icon: <UndoIcon isMenuIcon /> },
+        { label: t('menu.editRedo'), action: () => props.onEditAction('redo'), icon: <RedoIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Cut', action: () => props.onEditAction('cut'), icon: <ScissorsIcon isMenuIcon /> },
-        { label: 'Copy', action: () => props.onEditAction('copy'), icon: <CopyIcon isMenuIcon /> },
-        { label: 'Paste', action: () => props.onEditAction('paste'), icon: <ClipboardIcon isMenuIcon /> },
+        { label: t('menu.editCut'), action: () => props.onEditAction('cut'), icon: <ScissorsIcon isMenuIcon /> },
+        { label: t('menu.editCopy'), action: () => props.onEditAction('copy'), icon: <CopyIcon isMenuIcon /> },
+        { label: t('menu.editPaste'), action: () => props.onEditAction('paste'), icon: <ClipboardIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Format Painter', action: props.onCopyFormatting, icon: <PaintBrushIcon isMenuIcon /> },
+        { label: t('menu.editFormatPainter'), action: props.onCopyFormatting, icon: <PaintBrushIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Select All', action: () => props.onEditAction('selectAll'), icon: <SelectAllIcon isMenuIcon /> },
+        { label: t('menu.editSelectAll'), action: () => props.onEditAction('selectAll'), icon: <SelectAllIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Find and Replace...', action: props.onOpenFindReplace, icon: <SearchIcon isMenuIcon /> },
+        { label: t('menu.editFindReplace'), action: props.onOpenFindReplace, icon: <SearchIcon isMenuIcon /> },
     ];
     
     const insertMenuItems: MenuItem[] = [
-        { label: 'Link...', action: props.onInsertLink, icon: <LinkIcon isMenuIcon /> },
-        { label: 'Image...', action: props.onInsertImage, icon: <ImageIcon isMenuIcon /> },
-        { label: 'Table...', action: props.onInsertTable, icon: <TableIcon isMenuIcon /> },
-        { label: 'Shapes', icon: <SquareIcon isMenuIcon />, items: [
-            { label: 'Textbox', action: () => props.onInsertShape('textbox'), icon: <TypeIcon isMenuIcon /> },
-            { label: 'Rectangle', action: () => props.onInsertShape('rectangle'), icon: <SquareIcon isMenuIcon /> },
-            { label: 'Circle', action: () => props.onInsertShape('circle'), icon: <CircleIcon isMenuIcon /> },
-            { label: 'Triangle', action: () => props.onInsertShape('triangle'), icon: <TriangleIcon isMenuIcon /> },
+        { label: t('menu.insertLink'), action: props.onInsertLink, icon: <LinkIcon isMenuIcon /> },
+        { label: t('menu.insertImage'), action: props.onInsertImage, icon: <ImageIcon isMenuIcon /> },
+        { label: t('menu.insertTable'), action: props.onInsertTable, icon: <TableIcon isMenuIcon /> },
+        { label: t('menu.insertShapes'), icon: <SquareIcon isMenuIcon />, items: [
+            { label: t('menu.shapeTextbox'), action: () => props.onInsertShape('textbox'), icon: <TypeIcon isMenuIcon /> },
+            { label: t('menu.shapeRectangle'), action: () => props.onInsertShape('rectangle'), icon: <SquareIcon isMenuIcon /> },
+            { label: t('menu.shapeCircle'), action: () => props.onInsertShape('circle'), icon: <CircleIcon isMenuIcon /> },
+            { label: t('menu.shapeTriangle'), action: () => props.onInsertShape('triangle'), icon: <TriangleIcon isMenuIcon /> },
         ] },
-        { label: 'Horizontal Line', action: props.onInsertHorizontalRule, icon: <MinusIcon isMenuIcon /> },
-        { label: 'Special character...', action: props.onOpenSpecialCharacters, icon: <OmegaIcon isMenuIcon /> },
+        { label: t('menu.insertHorizontalLine'), action: props.onInsertHorizontalRule, icon: <MinusIcon isMenuIcon /> },
+        { label: t('menu.insertPageBreak'), action: props.onInsertPageBreak, icon: <SplitSquareVerticalIcon isMenuIcon /> },
+        { label: t('menu.insertSpecialChar'), action: props.onOpenSpecialCharacters, icon: <OmegaIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Add Comment', action: props.onAddComment, icon: <MessageSquareIcon isMenuIcon /> },
+        { label: t('menu.insertComment'), action: props.onAddComment, icon: <MessageSquareIcon isMenuIcon /> },
+    ];
+    
+    const formatMenuItems: MenuItem[] = [
+        {
+            label: t('menu.formatPageSize'),
+            icon: <FileTextIcon isMenuIcon />,
+            items: [
+                { label: t('menu.pageSizeLetter'), action: () => props.onSetPageSize('Letter') },
+                { label: t('menu.pageSizeA4'), action: () => props.onSetPageSize('A4') },
+                { label: t('menu.pageSizeLegal'), action: () => props.onSetPageSize('Legal') },
+            ]
+        },
+        {
+            label: t('menu.formatPageOrientation'),
+            icon: <RectangleHorizontalIcon isMenuIcon />,
+            items: [
+                { label: t('menu.orientationPortrait'), action: () => props.onSetPageOrientation('portrait'), icon: <RectangleVerticalIcon isMenuIcon /> },
+                { label: t('menu.orientationLandscape'), action: () => props.onSetPageOrientation('landscape'), icon: <RectangleHorizontalIcon isMenuIcon /> },
+            ]
+        }
+    ];
+
+    const aiToolsMenuItems: MenuItem[] = [
+        { label: t('menu.aiAnalyzeImage'), action: props.onAnalyzeImage, icon: <ImageIcon isMenuIcon /> },
+        { label: t('menu.aiTranscribeAudio'), action: props.onToggleTranscription, icon: <MicIcon isMenuIcon /> },
+        { 
+            label: props.isReadingAloud ? t('menu.aiStopReading') : t('menu.aiReadAloud'), 
+            action: props.onReadAloud, 
+            icon: props.isReadingAloud ? <SquareIcon isMenuIcon /> : <Volume2Icon isMenuIcon /> 
+        },
     ];
     
     const toolsMenuItems: MenuItem[] = [
-        { label: 'Source code', action: props.onOpenSourceCode, icon: <CodeIcon isMenuIcon /> },
-        { label: 'Word count', action: props.onOpenWordCount, icon: <BarChartIcon isMenuIcon /> },
+        { label: t('menu.toolsSourceCode'), action: props.onOpenSourceCode, icon: <CodeIcon isMenuIcon /> },
+        { label: t('menu.toolsWordCount'), action: props.onOpenWordCount, icon: <BarChartIcon isMenuIcon /> },
+        { separator: true },
+        {
+            label: t('menu.toolsLanguage'),
+            icon: <LanguageIcon isMenuIcon />,
+            items: [
+                { label: t('menu.langEnglish'), action: () => props.onSetLanguage('en') },
+                { label: t('menu.langGeorgian'), action: () => props.onSetLanguage('ka') },
+                { label: t('menu.langSpanish'), action: () => props.onSetLanguage('es') },
+            ]
+        },
+        { separator: true },
+        { 
+            label: t('menu.aiTools'), 
+            icon: <SparklesIcon isMenuIcon />,
+            items: aiToolsMenuItems,
+        },
     ];
 
     const viewMenuItems: MenuItem[] = [
-        { label: 'Preview', action: props.onPreview, icon: <EyeIcon isMenuIcon /> },
-        { label: 'Fullscreen', action: props.onToggleFullscreen, icon: <MaximizeIcon isMenuIcon /> },
+        { label: t('menu.viewPreview'), action: props.onPreview, icon: <EyeIcon isMenuIcon /> },
+        { label: t('menu.viewFullscreen'), action: props.onToggleFullscreen, icon: <MaximizeIcon isMenuIcon /> },
         { separator: true },
-        { label: 'Show Comments', action: props.onShowComments, icon: <MessageSquareIcon isMenuIcon /> },
+        { label: t('menu.viewShowComments'), action: props.onShowComments, icon: <MessageSquareIcon isMenuIcon /> },
     ];
 
-    const helpMenuItems: MenuItem[] = [{ label: 'About', action: () => alert('This is an online text editor.'), icon: <InfoIcon isMenuIcon /> }];
+    const helpMenuItems: MenuItem[] = [{ label: t('menu.helpAbout'), action: () => alert('This is an online text editor.'), icon: <InfoIcon isMenuIcon /> }];
 
     const menus = [
-        { label: 'File', items: fileMenuItems },
-        { label: 'Edit', items: editMenuItems },
-        { label: 'Insert', items: insertMenuItems },
-        { label: 'Tools', items: toolsMenuItems },
-        { label: 'View', items: viewMenuItems },
-        { label: 'Help', items: helpMenuItems },
+        { label: t('menu.file'), items: fileMenuItems },
+        { label: t('menu.edit'), items: editMenuItems },
+        { label: t('menu.insert'), items: insertMenuItems },
+        { label: t('menu.format'), items: formatMenuItems },
+        { label: t('menu.tools'), items: toolsMenuItems },
+        { label: t('menu.view'), items: viewMenuItems },
+        { label: t('menu.help'), items: helpMenuItems },
     ];
 
     const handleMobileAction = (action?: () => void) => {
@@ -296,7 +354,7 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
             
             <div className="flex-grow" />
 
-            <AutoSaveStatus isSaving={props.isSaving} lastSaved={props.lastSaved} isDocumentSaved={props.isDocumentSaved} />
+            <AutoSaveStatus isSaving={props.isSaving} lastSaved={props.lastSaved} isDocumentSaved={props.isDocumentSaved} t={t} />
             
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col" role="dialog" aria-modal="true">

@@ -1,10 +1,12 @@
+
 import React, { useState } from 'react';
 
 interface TablePaneProps {
   onInsertTable: (rows: number, cols: number) => void;
+  t: (key: string) => string;
 }
 
-const TablePane: React.FC<TablePaneProps> = ({ onInsertTable }) => {
+const TablePane: React.FC<TablePaneProps> = ({ onInsertTable, t }) => {
     const [rows, setRows] = useState(2);
     const [cols, setCols] = useState(2);
 
@@ -17,7 +19,7 @@ const TablePane: React.FC<TablePaneProps> = ({ onInsertTable }) => {
     return (
         <div className="space-y-4">
             <div>
-                <label htmlFor="table-rows" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rows</label>
+                <label htmlFor="table-rows" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.table.rows')}</label>
                 <input
                     type="number"
                     id="table-rows"
@@ -28,7 +30,7 @@ const TablePane: React.FC<TablePaneProps> = ({ onInsertTable }) => {
                 />
             </div>
             <div>
-                <label htmlFor="table-cols" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Columns</label>
+                <label htmlFor="table-cols" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.table.columns')}</label>
                 <input
                     type="number"
                     id="table-cols"
@@ -44,7 +46,7 @@ const TablePane: React.FC<TablePaneProps> = ({ onInsertTable }) => {
                     type="button"
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                  >
-                    Insert
+                    {t('panes.table.insert')}
                 </button>
             </div>
         </div>

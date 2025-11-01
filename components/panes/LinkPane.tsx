@@ -6,9 +6,10 @@ interface LinkPaneProps {
   onApplyLink: (data: { url: string; text: string }, elementToUpdate: HTMLAnchorElement | null) => void;
   onClose: () => void;
   editingElement: HTMLAnchorElement | null;
+  t: (key: string) => string;
 }
 
-const LinkPane: React.FC<LinkPaneProps> = ({ onApplyLink, onClose, editingElement }) => {
+const LinkPane: React.FC<LinkPaneProps> = ({ onApplyLink, onClose, editingElement, t }) => {
     const [url, setUrl] = useState('');
     const [text, setText] = useState('');
     
@@ -49,7 +50,7 @@ const LinkPane: React.FC<LinkPaneProps> = ({ onApplyLink, onClose, editingElemen
     return (
         <div className="space-y-4">
             <div>
-                <label htmlFor="link-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Text to display</label>
+                <label htmlFor="link-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.link.textToDisplay')}</label>
                 <input
                     type="text"
                     id="link-text"
@@ -59,7 +60,7 @@ const LinkPane: React.FC<LinkPaneProps> = ({ onApplyLink, onClose, editingElemen
                 />
             </div>
             <div>
-                <label htmlFor="link-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
+                <label htmlFor="link-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.link.url')}</label>
                 <input
                     type="text"
                     id="link-url"
@@ -75,13 +76,13 @@ const LinkPane: React.FC<LinkPaneProps> = ({ onApplyLink, onClose, editingElemen
                     type="button"
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                  >
-                    {isEditing ? 'Update' : 'Apply'}
+                    {isEditing ? t('panes.link.update') : t('panes.link.apply')}
                 </button>
                 {isEditing && (
                      <button
                         onClick={handleRemoveLink}
                         type="button"
-                        title="Remove Link"
+                        title={t('panes.link.removeLink')}
                         className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
                     >
                         <LinkOffIcon />

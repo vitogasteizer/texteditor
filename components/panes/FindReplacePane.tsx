@@ -1,10 +1,12 @@
+
 import React, { useState } from 'react';
 
 interface FindReplacePaneProps {
   onReplaceAll: (find: string, replace: string, options: { matchCase: boolean, wholeWord: boolean }) => void;
+  t: (key: string) => string;
 }
 
-const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll }) => {
+const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll, t }) => {
     const [findText, setFindText] = useState('');
     const [replaceText, setReplaceText] = useState('');
     const [matchCase, setMatchCase] = useState(false);
@@ -19,7 +21,7 @@ const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll }) => {
     return (
         <div className="space-y-4">
             <div>
-                <label htmlFor="find" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Find</label>
+                <label htmlFor="find" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.findReplace.find')}</label>
                 <input
                     type="text"
                     id="find"
@@ -29,7 +31,7 @@ const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll }) => {
                 />
             </div>
             <div>
-                <label htmlFor="replace" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Replace with</label>
+                <label htmlFor="replace" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.findReplace.replaceWith')}</label>
                 <input
                     type="text"
                     id="replace"
@@ -47,7 +49,7 @@ const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll }) => {
                         onChange={e => setMatchCase(e.target.checked)}
                         className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-500 rounded focus:ring-blue-500 bg-gray-100 dark:bg-gray-600"
                     />
-                    <label htmlFor="match-case" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Match case</label>
+                    <label htmlFor="match-case" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">{t('panes.findReplace.matchCase')}</label>
                 </div>
                 <div className="flex items-center">
                     <input
@@ -57,7 +59,7 @@ const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll }) => {
                         onChange={e => setWholeWord(e.target.checked)}
                         className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-500 rounded focus:ring-blue-500 bg-gray-100 dark:bg-gray-600"
                     />
-                    <label htmlFor="whole-word" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Whole word</label>
+                    <label htmlFor="whole-word" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">{t('panes.findReplace.wholeWord')}</label>
                 </div>
             </div>
             <div className="flex justify-end pt-2">
@@ -67,7 +69,7 @@ const FindReplacePane: React.FC<FindReplacePaneProps> = ({ onReplaceAll }) => {
                     type="button"
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                 >
-                    Replace All
+                    {t('panes.findReplace.replaceAll')}
                 </button>
             </div>
         </div>

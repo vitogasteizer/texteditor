@@ -5,6 +5,7 @@ interface SpecialCharactersModalProps {
   isOpen: boolean;
   onClose: () => void;
   onInsert: (char: string) => void;
+  t: (key: string) => string;
 }
 
 const specialCharacters = [
@@ -20,7 +21,7 @@ const specialCharacters = [
 ];
 
 
-const SpecialCharactersModal: React.FC<SpecialCharactersModalProps> = ({ isOpen, onClose, onInsert }) => {
+const SpecialCharactersModal: React.FC<SpecialCharactersModalProps> = ({ isOpen, onClose, onInsert, t }) => {
   if (!isOpen) return null;
 
   const handleWrapperClick = (e: React.MouseEvent) => {
@@ -43,7 +44,7 @@ const SpecialCharactersModal: React.FC<SpecialCharactersModalProps> = ({ isOpen,
       aria-labelledby="special-chars-title"
     >
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <h3 id="special-chars-title" className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Insert Special Character</h3>
+        <h3 id="special-chars-title" className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('modals.specialChars.title')}</h3>
         <div className="grid grid-cols-7 gap-2">
           {specialCharacters.map(char => (
             <button
@@ -62,7 +63,7 @@ const SpecialCharactersModal: React.FC<SpecialCharactersModalProps> = ({ isOpen,
             type="button"
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 border border-transparent rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
-            Close
+            {t('modals.specialChars.close')}
           </button>
         </div>
       </div>

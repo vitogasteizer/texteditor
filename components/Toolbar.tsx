@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, ChevronRightIcon, TextShadowIcon } from './icons/EditorIcons';
@@ -7,6 +8,7 @@ interface ToolbarProps {
   editorRef: React.RefObject<HTMLDivElement>;
   onCopyFormatting: () => void;
   isFormatPainterActive: boolean;
+  t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
 
 interface FontWeight { value: string; label: string; }
@@ -55,14 +57,6 @@ const fontSizes = [
   { value: '7', label: '36pt' },
 ];
 const sizeValueToLabelMap = new Map(fontSizes.map(s => [s.value, s.label]));
-const weightValueToLabelMap: Record<string, string> = { 
-    '300': 'Light', '400': 'Normal', 'normal': 'Normal', '500': 'Medium', 
-    '700': 'Bold', 'bold': 'Bold', '900': 'Black' 
-};
-
-
-const lineHeights = [ { value: '1', label: 'Single' }, { value: '1.5', label: '1.5' }, { value: '2', label: 'Double' }, { value: '2.5', label: '2.5' }, ];
-const alignmentIcons = { left: <AlignLeftIcon />, center: <AlignCenterIcon />, right: <AlignRightIcon />, justify: <AlignJustifyIcon />, };
 
 const ToolbarButton: React.FC<{ onAction: (e: React.MouseEvent<HTMLButtonElement>) => void; children: React.ReactNode; tooltip: string; isActive?: boolean; buttonRef?: React.RefObject<HTMLButtonElement> }> = ({ onAction, children, tooltip, isActive = false, buttonRef }) => {
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => { e.preventDefault(); onAction(e); };
@@ -82,7 +76,8 @@ const FontFamilyDropdown: React.FC<{
     label: string;
     items: FontFamily[];
     onSelect: (family: string, weight?: string) => void;
-}> = ({ label, items, onSelect }) => {
+    t: (key: string) => string;
+}> = ({ label, items, onSelect, t }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -135,6 +130,11 @@ const FontFamilyDropdown: React.FC<{
             window.removeEventListener('scroll', handleScroll, true);
         };
     }, [isOpen]);
+    
+    const getWeightLabel = (label: string): string => {
+        return t(`toolbar.fontWeights.${label.toLowerCase()}`) || label;
+    }
+
 
     const MenuPortal = menuPosition ? createPortal(
         <div ref={menuRef} style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }} className="fixed w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700" role="menu">
@@ -148,7 +148,7 @@ const FontFamilyDropdown: React.FC<{
                         <div className="absolute left-full -top-1 ml-1 w-40 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
                             {item.weights.map(weight => (
                                 <button key={weight.value} onMouseDown={(e) => { e.preventDefault(); handleSelect(item.value, weight.value); }} className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <span style={{ fontFamily: item.value, fontWeight: parseInt(weight.value) }}>{weight.label}</span>
+                                    <span style={{ fontFamily: item.value, fontWeight: parseInt(weight.value) }}>{getWeightLabel(weight.label)}</span>
                                 </button>
                             ))}
                         </div>
@@ -246,7 +246,7 @@ const ColorPicker: React.FC<{ onAction: (color: string) => void; tooltip: string
     );
 };
 
-const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormatPainterActive }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormatPainterActive, t }) => {
     const [toolbarState, setToolbarState] = useState({
         fontName: 'Arial',
         fontSize: '12pt',
@@ -272,12 +272,17 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         }
         if (!element) return;
         
+        const weightValueToLabelMap: Record<string, string> = { 
+            '300': t('toolbar.fontWeights.light'), '400': t('toolbar.fontWeights.normal'), 'normal': t('toolbar.fontWeights.normal'), 
+            '500': t('toolbar.fontWeights.medium'), '700': t('toolbar.fontWeights.bold'), 'bold': t('toolbar.fontWeights.bold'), '900': t('toolbar.fontWeights.black')
+        };
+
         const styles = window.getComputedStyle(element as Element);
         const fontName = styles.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Arial';
         const fontSizeValue = document.queryCommandValue('fontSize');
         const fontSize = sizeValueToLabelMap.get(fontSizeValue) || '12pt';
         const fontWeightValue = styles.fontWeight;
-        const fontWeight = weightValueToLabelMap[fontWeightValue] || 'Normal';
+        const fontWeight = weightValueToLabelMap[fontWeightValue] || t('toolbar.fontWeights.normal');
         const textShadow = styles.textShadow;
         
         setToolbarState({
@@ -291,7 +296,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
             align: document.queryCommandState('justifyCenter') ? 'center' : document.queryCommandState('justifyRight') ? 'right' : document.queryCommandState('justifyFull') ? 'justify' : 'left',
             textShadow,
         });
-    }, [editorRef]);
+    }, [editorRef, t]);
 
     useEffect(() => {
         const editor = editorRef.current;
@@ -421,46 +426,49 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
       }
   };
 
-  const fontLabel = `${toolbarState.fontName}${toolbarState.fontWeight !== 'Normal' ? ` (${toolbarState.fontWeight})` : ''}`;
+  const fontLabel = `${toolbarState.fontName}${toolbarState.fontWeight !== t('toolbar.fontWeights.normal') ? ` (${toolbarState.fontWeight})` : ''}`;
+  const alignmentIcons = { left: <AlignLeftIcon />, center: <AlignCenterIcon />, right: <AlignRightIcon />, justify: <AlignJustifyIcon />, };
+  const lineHeights = [ { value: '1', label: t('toolbar.lineHeights.single') }, { value: '1.5', label: '1.5' }, { value: '2', label: t('toolbar.lineHeights.double') }, { value: '2.5', label: '2.5' }, ];
+
 
   return (
     <div className="p-2 bg-gray-50 dark:bg-gray-800">
       <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap pb-2 -mb-2">
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-          <ToolbarButton onAction={() => executeCommand('undo')} tooltip="Undo (Ctrl+Z)"><UndoIcon /></ToolbarButton>
-          <ToolbarButton onAction={() => executeCommand('redo')} tooltip="Redo (Ctrl+Y)"><RedoIcon /></ToolbarButton>
-          <ToolbarButton onAction={onCopyFormatting} tooltip="Format Painter (Ctrl+Shift+C)" isActive={isFormatPainterActive}><PaintBrushIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('undo')} tooltip={t('toolbar.undo')}><UndoIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('redo')} tooltip={t('toolbar.redo')}><RedoIcon /></ToolbarButton>
+          <ToolbarButton onAction={onCopyFormatting} tooltip={t('toolbar.formatPainter')} isActive={isFormatPainterActive}><PaintBrushIcon /></ToolbarButton>
         </div>
         
         <div className="flex items-center gap-2 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-           <FontFamilyDropdown label={fontLabel} items={fontFamilies} onSelect={applyFontAndWeight} />
+           <FontFamilyDropdown label={fontLabel} items={fontFamilies} onSelect={applyFontAndWeight} t={t} />
            <ToolbarDropdown label={toolbarState.fontSize} items={fontSizes} onSelect={(value) => executeCommand('fontSize', value)} widthClass="w-24" />
         </div>
 
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-          <ToolbarButton onAction={() => executeCommand('bold')} tooltip="Bold (Ctrl+B)" isActive={toolbarState.bold}><BoldIcon /></ToolbarButton>
-          <ToolbarButton onAction={() => executeCommand('italic')} tooltip="Italic (Ctrl+I)" isActive={toolbarState.italic}><ItalicIcon /></ToolbarButton>
-          <ToolbarButton onAction={() => executeCommand('underline')} tooltip="Underline (Ctrl+U)" isActive={toolbarState.underline}><UnderlineIcon /></ToolbarButton>
-          <ToolbarButton onAction={() => executeCommand('strikethrough')} tooltip="Strikethrough (Ctrl+Shift+X)" isActive={toolbarState.strikethrough}><StrikethroughIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('bold')} tooltip={t('toolbar.bold')} isActive={toolbarState.bold}><BoldIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('italic')} tooltip={t('toolbar.italic')} isActive={toolbarState.italic}><ItalicIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('underline')} tooltip={t('toolbar.underline')} isActive={toolbarState.underline}><UnderlineIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('strikethrough')} tooltip={t('toolbar.strikethrough')} isActive={toolbarState.strikethrough}><StrikethroughIcon /></ToolbarButton>
         </div>
         
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-            <ColorPicker onAction={(color) => executeCommand('foreColor', color)} tooltip="Text Color"><TextColorIcon /></ColorPicker>
-            <ColorPicker onAction={(color) => executeCommand('hiliteColor', color)} tooltip="Background Color (Highlight)"><BgColorIcon /></ColorPicker>
-            <ToolbarButton buttonRef={textShadowButtonRef} onAction={() => setIsTextShadowDropdownOpen(true)} tooltip="Text Shadow" isActive={toolbarState.textShadow !== 'none'}><TextShadowIcon /></ToolbarButton>
+            <ColorPicker onAction={(color) => executeCommand('foreColor', color)} tooltip={t('toolbar.textColor')}><TextColorIcon /></ColorPicker>
+            <ColorPicker onAction={(color) => executeCommand('hiliteColor', color)} tooltip={t('toolbar.bgColor')}><BgColorIcon /></ColorPicker>
+            <ToolbarButton buttonRef={textShadowButtonRef} onAction={() => setIsTextShadowDropdownOpen(true)} tooltip={t('toolbar.textShadow')} isActive={toolbarState.textShadow !== 'none'}><TextShadowIcon /></ToolbarButton>
         </div>
 
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-          <ToolbarButton onAction={() => executeCommand('insertUnorderedList')} tooltip="Bulleted List (Ctrl+Shift+8)" isActive={toolbarState.ul}><ListUnorderedIcon /></ToolbarButton>
-          <ToolbarButton onAction={() => executeCommand('insertOrderedList')} tooltip="Numbered List (Ctrl+Shift+7)" isActive={toolbarState.ol}><ListOrderedIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('insertUnorderedList')} tooltip={t('toolbar.bulletedList')} isActive={toolbarState.ul}><ListUnorderedIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('insertOrderedList')} tooltip={t('toolbar.numberedList')} isActive={toolbarState.ol}><ListOrderedIcon /></ToolbarButton>
         </div>
         
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
             <ToolbarDropdown
                 label={alignmentIcons[toolbarState.align]}
                 items={[
-                    { value: 'justifyLeft', label: 'Align Left (Ctrl+Shift+L)' }, { value: 'justifyCenter', label: 'Align Center (Ctrl+Shift+E)' },
-                    { value: 'justifyRight', label: 'Align Right (Ctrl+Shift+R)' }, { value: 'justifyFull', label: 'Align Justify (Ctrl+Shift+J)' },
+                    { value: 'justifyLeft', label: t('toolbar.alignLeft') }, { value: 'justifyCenter', label: t('toolbar.alignCenter') },
+                    { value: 'justifyRight', label: t('toolbar.alignRight') }, { value: 'justifyFull', label: t('toolbar.alignJustify') },
                 ]}
                 onSelect={executeCommand} widthClass="w-56"
             />
@@ -468,7 +476,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         </div>
 
          <div className="flex items-center gap-1">
-          <ToolbarButton onAction={() => executeCommand('removeFormat')} tooltip="Clear Formatting (Ctrl+\)"><ClearFormattingIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('removeFormat')} tooltip={t('toolbar.clearFormatting')}><ClearFormattingIcon /></ToolbarButton>
         </div>
       </div>
       {isTextShadowDropdownOpen && (

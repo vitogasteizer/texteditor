@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ImageOptions } from '../../App';
 import { AlignLeftIcon, AlignStartHorizontalIcon, AlignCenterHorizontalIcon, AlignEndHorizontalIcon } from '../icons/EditorIcons';
@@ -8,6 +9,7 @@ interface ImagePaneProps {
   editingElement: HTMLImageElement | null;
   onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
   onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
+  t: (key: string) => string;
 }
 
 interface ShadowState {
@@ -19,7 +21,7 @@ interface ShadowState {
 }
 
 const parseStyle = (value: string | undefined | null, defaultValue: number): number => {
-    if (value === undefined || value === null) return defaultValue;
+    if (value === undefined || value === null || value === 'auto') return defaultValue;
     const parsed = parseInt(value, 10);
     return isNaN(parsed) ? defaultValue : parsed;
 };
@@ -48,7 +50,7 @@ const parseBoxShadow = (boxShadow: string | undefined): ShadowState => {
       };
 };
 
-const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElement, onUpdateElementStyle, onChangeZIndex }) => {
+const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElement, onUpdateElementStyle, onChangeZIndex, t }) => {
     const [sourceType, setSourceType] = useState<'url' | 'upload'>('url');
     const [url, setUrl] = useState('');
     const [fileSrc, setFileSrc] = useState('');
@@ -144,13 +146,13 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
             {!isEditing && (
               <>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => setSourceType('url')} className={`px-3 py-1.5 text-sm rounded-md flex-1 ${sourceType === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>From URL</button>
-                    <button onClick={() => setSourceType('upload')} className={`px-3 py-1.5 text-sm rounded-md flex-1 ${sourceType === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>Upload</button>
+                    <button onClick={() => setSourceType('url')} className={`px-3 py-1.5 text-sm rounded-md flex-1 ${sourceType === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>{t('panes.image.fromUrl')}</button>
+                    <button onClick={() => setSourceType('upload')} className={`px-3 py-1.5 text-sm rounded-md flex-1 ${sourceType === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>{t('panes.image.upload')}</button>
                 </div>
 
                 {sourceType === 'url' ? (
                      <div>
-                        <label htmlFor="image-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
+                        <label htmlFor="image-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.image.imageUrl')}</label>
                         <input
                             type="text"
                             id="image-url"
@@ -162,7 +164,7 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                     </div>
                 ) : (
                     <div>
-                        <label htmlFor="image-upload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload File</label>
+                        <label htmlFor="image-upload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('panes.image.uploadFile')}</label>
                         <input
                             type="file"
                             id="image-upload"
@@ -177,25 +179,25 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
             )}
             
             <details className="space-y-2" open>
-                <summary className="font-medium cursor-pointer">Transform & Position</summary>
+                <summary className="font-medium cursor-pointer">{t('panes.image.transform')}</summary>
                 <div className="grid grid-cols-2 gap-4 pt-2">
                      <div>
-                        <label htmlFor="image-width" className="block text-xs text-gray-500 mb-1">Width (px)</label>
+                        <label htmlFor="image-width" className="block text-xs text-gray-500 mb-1">{t('panes.image.width')}</label>
                         <input
                             type="number"
                             id="image-width"
-                            value={styles.width}
+                            value={parseStyle(styles.width, 0)}
                             onChange={e => handleStyleChange({ width: `${e.target.value}px` })}
                             placeholder="auto"
                             className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
                         />
                     </div>
                      <div>
-                        <label htmlFor="image-height" className="block text-xs text-gray-500 mb-1">Height (px)</label>
+                        <label htmlFor="image-height" className="block text-xs text-gray-500 mb-1">{t('panes.image.height')}</label>
                         <input
                             type="number"
                             id="image-height"
-                            value={styles.height}
+                            value={parseStyle(styles.height, 0)}
                             onChange={e => handleStyleChange({ height: `${e.target.value}px` })}
                             placeholder="auto"
                             className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
@@ -203,7 +205,7 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                     </div>
                 </div>
                 <div className="pt-2">
-                    <label className="block text-xs text-gray-500 mb-1">Rotation ({currentRotation}°)</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t('panes.image.rotation')} ({currentRotation}°)</label>
                     <input
                         type="range"
                         min="-180" max="180" step="1"
@@ -213,21 +215,21 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                     />
                 </div>
                 <div>
-                    <label className="block text-xs text-gray-500 mb-1">Alignment</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t('panes.image.alignment')}</label>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setStyles(s=>({...s, align: 'none'}))} title="Inline" className={`p-2 rounded-md ${styles.align === 'none' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignLeftIcon /></button>
-                        <button onClick={() => setStyles(s=>({...s, align: 'left'}))} title="Float Left" className={`p-2 rounded-md ${styles.align === 'left' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignStartHorizontalIcon /></button>
-                        <button onClick={() => setStyles(s=>({...s, align: 'center'}))} title="Center" className={`p-2 rounded-md ${styles.align === 'center' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignCenterHorizontalIcon /></button>
-                        <button onClick={() => setStyles(s=>({...s, align: 'right'}))} title="Float Right" className={`p-2 rounded-md ${styles.align === 'right' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignEndHorizontalIcon /></button>
+                        <button onClick={() => setStyles(s=>({...s, align: 'none'}))} title={t('panes.image.inline')} className={`p-2 rounded-md ${styles.align === 'none' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignLeftIcon /></button>
+                        <button onClick={() => setStyles(s=>({...s, align: 'left'}))} title={t('panes.image.floatLeft')} className={`p-2 rounded-md ${styles.align === 'left' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignStartHorizontalIcon /></button>
+                        <button onClick={() => setStyles(s=>({...s, align: 'center'}))} title={t('panes.image.center')} className={`p-2 rounded-md ${styles.align === 'center' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignCenterHorizontalIcon /></button>
+                        <button onClick={() => setStyles(s=>({...s, align: 'right'}))} title={t('panes.image.floatRight')} className={`p-2 rounded-md ${styles.align === 'right' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}><AlignEndHorizontalIcon /></button>
                     </div>
                 </div>
             </details>
             
             <details className="space-y-2" open>
-                <summary className="font-medium cursor-pointer">Style</summary>
+                <summary className="font-medium cursor-pointer">{t('panes.image.style')}</summary>
                 <div className="pt-2 space-y-2">
                     <div>
-                        <label className="block text-xs text-gray-500 mb-1">Opacity</label>
+                        <label className="block text-xs text-gray-500 mb-1">{t('panes.image.opacity')}</label>
                         <input
                             type="range" min="0" max="1" step="0.1"
                             value={styles.opacity}
@@ -236,7 +238,7 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                         />
                     </div>
                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Corner Radius</label>
+                        <label className="block text-xs text-gray-500 mb-1">{t('panes.image.cornerRadius')}</label>
                         <input 
                             type="number" min="0" 
                             value={parseStyle(styles.borderRadius, 0)} 
@@ -247,30 +249,30 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
             </details>
 
             <details className="space-y-2" open>
-                <summary className="font-medium cursor-pointer">Shadow</summary>
+                <summary className="font-medium cursor-pointer">{t('panes.image.shadow')}</summary>
                 <div className="space-y-2 pt-2">
                     <div className="flex items-center">
                         <input id="shadow-enabled" type="checkbox" checked={currentShadow.enabled} onChange={e => handleShadowChange('enabled', e.target.checked)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                        <label htmlFor="shadow-enabled" className="ml-2 text-xs text-gray-700 dark:text-gray-300">Enable Shadow</label>
+                        <label htmlFor="shadow-enabled" className="ml-2 text-xs text-gray-700 dark:text-gray-300">{t('panes.image.enableShadow')}</label>
                     </div>
                     {currentShadow.enabled && (
                         <>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">X offset</label>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('panes.image.xOffset')}</label>
                                     <input type="number" value={currentShadow.offsetX} onChange={e => handleShadowChange('offsetX', parseInt(e.target.value, 10))} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Y offset</label>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('panes.image.yOffset')}</label>
                                     <input type="number" value={currentShadow.offsetY} onChange={e => handleShadowChange('offsetY', parseInt(e.target.value, 10))} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1">Blur</label>
+                                <label className="block text-xs text-gray-500 mb-1">{t('panes.image.blur')}</label>
                                 <input type="number" min="0" value={currentShadow.blur} onChange={e => handleShadowChange('blur', parseInt(e.target.value, 10))} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1">Color</label>
+                                <label className="block text-xs text-gray-500 mb-1">{t('panes.image.color')}</label>
                                 <input type="color" value={currentShadow.color} onChange={e => handleShadowChange('color', e.target.value)} className="w-full h-8 p-0 border-none rounded-md cursor-pointer"/>
                             </div>
                         </>
@@ -280,10 +282,10 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
 
             {isEditing && (
                  <details className="space-y-2" open>
-                    <summary className="font-medium cursor-pointer">Arrange</summary>
+                    <summary className="font-medium cursor-pointer">{t('panes.image.arrange')}</summary>
                     <div className="flex items-center gap-2 pt-2">
-                        <button onClick={() => onChangeZIndex(editingElement!, 'front')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">Bring Forward</button>
-                        <button onClick={() => onChangeZIndex(editingElement!, 'back')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">Send Backward</button>
+                        <button onClick={() => onChangeZIndex(editingElement!, 'front')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">{t('panes.image.bringForward')}</button>
+                        <button onClick={() => onChangeZIndex(editingElement!, 'back')} className="px-3 py-1.5 text-xs rounded-md flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">{t('panes.image.sendBackward')}</button>
                     </div>
                 </details>
             )}
@@ -296,7 +298,7 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
                         type="button"
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                        Insert
+                        {t('panes.image.insert')}
                     </button>
                 </div>
             )}

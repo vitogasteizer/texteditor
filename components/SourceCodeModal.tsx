@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 interface SourceCodeModalProps {
@@ -5,9 +6,10 @@ interface SourceCodeModalProps {
   onClose: () => void;
   content: string;
   onSave: (newContent: string) => void;
+  t: (key: string) => string;
 }
 
-const SourceCodeModal: React.FC<SourceCodeModalProps> = ({ isOpen, onClose, content, onSave }) => {
+const SourceCodeModal: React.FC<SourceCodeModalProps> = ({ isOpen, onClose, content, onSave, t }) => {
   const [code, setCode] = useState(content);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ const SourceCodeModal: React.FC<SourceCodeModalProps> = ({ isOpen, onClose, cont
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl flex flex-col h-4/5" 
         onClick={e => e.stopPropagation()}
       >
-        <h3 id="source-code-title" className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Source Code (HTML)</h3>
+        <h3 id="source-code-title" className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('modals.sourceCode.title')}</h3>
         <textarea
           value={code}
           onChange={e => setCode(e.target.value)}
@@ -53,14 +55,14 @@ const SourceCodeModal: React.FC<SourceCodeModalProps> = ({ isOpen, onClose, cont
                 type="button"
                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 border border-transparent rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
-                Cancel
+                {t('modals.sourceCode.cancel')}
             </button>
             <button
                 onClick={handleSave}
                 type="button"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-                Save
+                {t('modals.sourceCode.save')}
             </button>
         </div>
       </div>

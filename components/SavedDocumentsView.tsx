@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import type { Doc } from '../App';
 import { GridViewIcon, ListViewIcon, MoreVerticalIcon, FileTextIcon, Trash2Icon, EditIcon } from './icons/EditorIcons';
@@ -8,12 +9,14 @@ interface SavedDocumentsViewProps {
   onRenameDocument: (docId: string, newName: string) => void;
   onDeleteDocument: (docId: string) => void;
   onNewDocument: () => void;
+  t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
 
 const DocumentItemMenu: React.FC<{
   onRename: () => void;
   onDelete: () => void;
-}> = ({ onRename, onDelete }) => {
+  t: (key: string) => string;
+}> = ({ onRename, onDelete, t }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +35,7 @@ const DocumentItemMenu: React.FC<{
       <button
         onClick={(e) => { e.stopPropagation(); setIsOpen(prev => !prev); }}
         className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
-        aria-label="Document options"
+        aria-label={t('savedDocs.options')}
       >
         <MoreVerticalIcon className="w-5 h-5" />
       </button>
@@ -42,13 +45,13 @@ const DocumentItemMenu: React.FC<{
             onClick={(e) => { e.stopPropagation(); onRename(); setIsOpen(false); }}
             className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
           >
-            <EditIcon className="w-4 h-4 mr-2" /> Rename
+            <EditIcon className="w-4 h-4 mr-2" /> {t('savedDocs.rename')}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); setIsOpen(false); }}
             className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600"
           >
-            <Trash2Icon className="w-4 h-4 mr-2" /> Delete
+            <Trash2Icon className="w-4 h-4 mr-2" /> {t('savedDocs.delete')}
           </button>
         </div>
       )}
@@ -62,17 +65,18 @@ const DocumentItem: React.FC<{
   onOpenDocument: (docId: string) => void;
   onRenameDocument: (docId: string, newName: string) => void;
   onDeleteDocument: (docId: string) => void;
-}> = ({ doc, viewMode, onOpenDocument, onRenameDocument, onDeleteDocument }) => {
+  t: (key: string, replacements?: { [key: string]: string | number }) => string;
+}> = ({ doc, viewMode, onOpenDocument, onRenameDocument, onDeleteDocument, t }) => {
   
   const handleRename = () => {
-    const newName = prompt("Enter new name for the document:", doc.name);
+    const newName = prompt(t('savedDocs.renamePrompt'), doc.name);
     if (newName && newName.trim() !== "") {
       onRenameDocument(doc.id, newName.trim());
     }
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${doc.name}"?`)) {
+    if (window.confirm(t('savedDocs.deleteConfirm', { name: doc.name }))) {
       onDeleteDocument(doc.id);
     }
   };
@@ -93,10 +97,10 @@ const DocumentItem: React.FC<{
         <div className="p-3 flex items-center justify-between">
           <div className="flex-grow overflow-hidden">
             <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-100">{doc.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Updated: {formattedDate}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('savedDocs.updated')}: {formattedDate}</p>
           </div>
           <div className="flex-shrink-0 -mr-2">
-            <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} />
+            <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} t={t} />
           </div>
         </div>
       </div>
@@ -113,10 +117,10 @@ const DocumentItem: React.FC<{
         <p className="font-medium text-sm text-gray-800 dark:text-gray-100">{doc.name}</p>
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400 w-40 text-right hidden md:block">
-        Updated: {formattedDate}
+        {t('savedDocs.updated')}: {formattedDate}
       </div>
       <div className="ml-4 flex-shrink-0">
-         <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} />
+         <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} t={t} />
       </div>
     </div>
   );
@@ -124,6 +128,7 @@ const DocumentItem: React.FC<{
 
 
 const SavedDocumentsView: React.FC<SavedDocumentsViewProps> = (props) => {
+  const { t } = props;
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const sortedDocs = [...props.documents].sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -131,26 +136,26 @@ const SavedDocumentsView: React.FC<SavedDocumentsViewProps> = (props) => {
     <div className="h-full flex flex-col">
         {/* Header */}
         <header className="sticky top-0 z-10 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-wrap gap-2 bg-white dark:bg-gray-800">
-          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Saved Documents</h1>
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{t('savedDocs.title')}</h1>
           <div className="flex items-center gap-2">
             <button
                 onClick={props.onNewDocument}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-                New Document
+                {t('savedDocs.newDoc')}
             </button>
             <div className="flex items-center bg-gray-100 dark:bg-gray-900/50 p-1 rounded-md">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                aria-label="Grid view"
+                aria-label={t('savedDocs.gridView')}
               >
                 <GridViewIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                aria-label="List view"
+                aria-label={t('savedDocs.listView')}
               >
                 <ListViewIcon className="w-5 h-5" />
               </button>
@@ -174,8 +179,8 @@ const SavedDocumentsView: React.FC<SavedDocumentsViewProps> = (props) => {
               ) : (
                 <div className="text-center py-16">
                   <FileTextIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                  <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">No Saved Documents</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Click "New Document" to get started.</p>
+                  <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">{t('savedDocs.emptyState')}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('savedDocs.emptyStateSub')}</p>
                 </div>
               )}
            </div>

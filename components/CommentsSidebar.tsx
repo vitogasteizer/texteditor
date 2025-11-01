@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Comment } from '../App';
 import { CloseIcon, MessageSquareIcon } from './icons/EditorIcons';
@@ -6,9 +7,26 @@ interface CommentsSidebarProps {
   comments: Comment[];
   onResolve: (commentId: string) => void;
   onClose: () => void;
+  onAddComment: () => void;
+  t: (key: string) => string;
 }
 
-const CommentCard: React.FC<{ comment: Comment; onResolve: (id: string) => void }> = ({ comment, onResolve }) => {
+const AddCommentIcon: React.FC = () => (
+    <svg
+        className="w-5 h-5"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+);
+
+
+const CommentCard: React.FC<{ comment: Comment; onResolve: (id: string) => void; t: (key: string) => string; }> = ({ comment, onResolve, t }) => {
   const formattedDate = new Date(comment.createdAt).toLocaleString(undefined, {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
@@ -22,19 +40,19 @@ const CommentCard: React.FC<{ comment: Comment; onResolve: (id: string) => void 
             onClick={() => onResolve(comment.id)}
             className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
         >
-            Resolve
+            {t('comments.resolve')}
         </button>
       </div>
     </div>
   );
 };
 
-const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ comments, onResolve, onClose }) => {
+const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ comments, onResolve, onClose, onAddComment, t }) => {
   return (
     <aside className="w-80 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full flex-shrink-0">
       <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">Comments</h2>
-        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Close comments sidebar">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">{t('comments.title')}</h2>
+        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label={t('comments.close')}>
           <CloseIcon />
         </button>
       </header>
@@ -42,16 +60,25 @@ const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ comments, onResolve, 
         {comments.length > 0 ? (
           <div className="space-y-4">
             {comments.map(comment => (
-              <CommentCard key={comment.id} comment={comment} onResolve={onResolve} />
+              <CommentCard key={comment.id} comment={comment} onResolve={onResolve} t={t} />
             ))}
           </div>
         ) : (
           <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-10 flex flex-col items-center">
             <MessageSquareIcon />
-            <p className="mt-2">No active comments.</p>
+            <p className="mt-2">{t('comments.noComments')}</p>
           </div>
         )}
       </div>
+      <footer className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <button
+            onClick={onAddComment}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <AddCommentIcon />
+            {t('comments.addComment')}
+          </button>
+      </footer>
     </aside>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface EditorProps {
@@ -11,6 +12,9 @@ interface EditorProps {
 const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onMouseUp, onDoubleClick, onClick }, ref) => {
   const contentRef = ref || useRef<HTMLDivElement>(null);
   
+  // onInput is intentionally removed to let the browser handle its own undo/redo stack
+  // for contentEditable elements. Changes are synced back to React state onBlur.
+
   const handleBlur = useCallback(() => {
     const editor = contentRef && 'current' in contentRef ? contentRef.current : null;
     if (editor && editor.innerHTML !== content) {
@@ -21,30 +25,26 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
   useEffect(() => {
     const editor = contentRef && 'current' in contentRef ? contentRef.current : null;
     if (editor && editor.innerHTML !== content) {
-      // This helps in preserving the cursor position on external updates.
+      // This helps in preserving the cursor position on external updates (like loading a doc).
       const selection = window.getSelection();
-      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-      const startOffset = range?.startOffset;
-      const startContainer = range?.startContainer;
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
       
       editor.innerHTML = content;
       
-      if(range && startContainer && startOffset !== undefined) {
+      if(range && selection) {
         try {
-            // Check if the container is still in the DOM
-            if (document.body.contains(startContainer)) {
-                const newRange = document.createRange();
-                newRange.setStart(startContainer, Math.min(startOffset, startContainer.textContent?.length || 0));
-                newRange.collapse(true);
-                selection?.removeAllRanges();
-                selection?.addRange(newRange);
+            // Check if the container is still in the DOM before restoring
+            if (document.body.contains(range.startContainer)) {
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
         } catch(e){
             console.error("Failed to restore cursor position.", e);
         }
       }
     }
-  }, [content, contentRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content]); // Intentionally dependent only on content to react to external changes.
   
   return (
     <div
@@ -56,6 +56,7 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
       contentEditable={true}
       suppressContentEditableWarning={true}
       className="relative px-16 py-20 min-h-full focus:outline-none prose dark:prose-invert max-w-none prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline"
+      // The initial content is set via useEffect to avoid hydration issues.
     />
   );
 });
