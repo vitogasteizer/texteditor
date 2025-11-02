@@ -1,6 +1,7 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
-import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon } from './icons/EditorIcons';
+import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon, KeyboardIcon } from './icons/EditorIcons';
 import type { ShapeType, PageSize, PageOrientation } from '../App';
 import type { Language } from '../lib/translations';
 
@@ -49,6 +50,7 @@ interface MenuBarProps {
   isDocumentSaved: boolean;
   onOpenPageSetup: () => void;
   onOpenAboutModal: () => void;
+  onOpenShortcuts: () => void;
   onSetLanguage: (lang: Language) => void;
   onReadAloud: () => void;
   isReadingAloud: boolean;
@@ -301,7 +303,10 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
         { label: t('menu.viewShowComments'), action: props.onShowComments, icon: <MessageSquareIcon isMenuIcon /> },
     ];
 
-    const helpMenuItems: MenuItem[] = [{ label: t('menu.helpAbout'), action: props.onOpenAboutModal, icon: <InfoIcon isMenuIcon /> }];
+    const helpMenuItems: MenuItem[] = [
+        { label: t('menu.helpShortcuts'), action: props.onOpenShortcuts, icon: <KeyboardIcon isMenuIcon /> },
+        { label: t('menu.helpAbout'), action: props.onOpenAboutModal, icon: <InfoIcon isMenuIcon /> }
+    ];
 
     const menus = [
         { label: t('menu.file'), items: fileMenuItems },

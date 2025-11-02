@@ -267,3 +267,6 @@ export const SendIcon: React.FC<{className?: string}> = ({className}) => (
 export const StopCircleIcon: React.FC<{className?: string}> = ({className}) => (
     <svg {...iconProps} className={className || iconProps.className}><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
 );
+export const KeyboardIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M10 14h4M18 14h.01"/></svg>
+);

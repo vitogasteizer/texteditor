@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 
 interface ShapePaneProps {
@@ -172,9 +173,7 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
     let newStyles: React.CSSProperties = {};
     if (mode === 'absolute') {
         newStyles = {
-// FIX: Assert 'absolute' as a constant to match the literal type expected by CSSProperties.
             position: 'absolute' as const,
-// FIX: Assert 'none' as a constant to match the literal type expected by CSSProperties.
             float: 'none' as const,
             margin: '',
             top: styles.top || '100px',
@@ -182,7 +181,6 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
         };
     } else { // left or right
         newStyles = {
-// FIX: Assert 'relative' as a constant to match the literal type expected by CSSProperties.
             position: 'relative' as const,
             float: mode,
             margin: mode === 'left' ? '0.5rem 1rem 0.5rem 0' : '0.5rem 0 0.5rem 1rem',

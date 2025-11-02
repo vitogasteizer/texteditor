@@ -1,4 +1,5 @@
 
+
 export type Language = 'en' | 'ka' | 'es';
 
 type Translations = {
@@ -57,6 +58,7 @@ export const translations: Translations = {
       viewFullscreen: 'Fullscreen',
       viewShowComments: 'Show Comments',
       help: 'Help',
+      helpShortcuts: 'Keyboard Shortcuts',
       helpAbout: 'About',
     },
     autosave: {
@@ -445,6 +447,7 @@ export const translations: Translations = {
       viewFullscreen: 'სრულ ეკრანზე',
       viewShowComments: 'კომენტარების ჩვენება',
       help: 'დახმარება',
+      helpShortcuts: 'კლავიატურის კომბინაციები',
       helpAbout: 'შესახებ',
     },
     autosave: {
@@ -833,6 +836,7 @@ export const translations: Translations = {
       viewFullscreen: 'Pantalla completa',
       viewShowComments: 'Mostrar comentarios',
       help: 'Ayuda',
+      helpShortcuts: 'Atajos de teclado',
       helpAbout: 'Acerca de',
     },
     autosave: {

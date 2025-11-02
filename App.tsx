@@ -20,6 +20,7 @@ import AiSidekick from './components/AiSidekick';
 import PageSetupModal from './components/PageSetupModal';
 import DocumentPreviewModal from './components/DocumentPreviewModal';
 import AboutModal from './components/AboutModal';
+import ShortcutsSidebar from './components/ShortcutsSidebar';
 import { translations, Language } from './lib/translations';
 
 
@@ -143,6 +144,7 @@ const App: React.FC = () => {
   const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
   const [previewDocContent, setPreviewDocContent] = useState('');
   const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
+  const [isShortcutsSidebarVisible, setIsShortcutsSidebarVisible] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -1221,6 +1223,7 @@ const App: React.FC = () => {
     setActivePanel(panel);
     setIsCommentsSidebarVisible(false);
     setIsAiSidekickVisible(false);
+    setIsShortcutsSidebarVisible(false);
     setFloatingToolbar(null);
   }
 
@@ -1552,12 +1555,20 @@ const App: React.FC = () => {
                     setIsCommentsSidebarVisible(prev => !prev);
                     setActivePanel(null);
                     setIsAiSidekickVisible(false);
+                    setIsShortcutsSidebarVisible(false);
                   }}
                   onToggleAiSidekick={() => {
                       if (!checkAiAvailability()) return;
                       setIsAiSidekickVisible(prev => !prev);
                       setActivePanel(null);
                       setIsCommentsSidebarVisible(false);
+                      setIsShortcutsSidebarVisible(false);
+                  }}
+                  onOpenShortcuts={() => {
+                    setIsShortcutsSidebarVisible(prev => !prev);
+                    setActivePanel(null);
+                    setIsCommentsSidebarVisible(false);
+                    setIsAiSidekickVisible(false);
                   }}
                   onOpenSpecialCharacters={() => { saveSelection(); setIsSpecialCharVisible(true); }}
                   isSaving={isSaving}
@@ -1580,6 +1591,7 @@ const App: React.FC = () => {
                       setIsAiSidekickVisible(prev => !prev);
                       setActivePanel(null);
                       setIsCommentsSidebarVisible(false);
+                      setIsShortcutsSidebarVisible(false);
                   }}
                   onInsertChecklist={handleInsertChecklist}
                   t={t}
@@ -1660,6 +1672,11 @@ const App: React.FC = () => {
                             onResolve={handleResolveComment}
                             onClose={() => setIsCommentsSidebarVisible(false)}
                             onAddComment={() => { saveSelection(); handleOpenCommentModal(); }}
+                            t={t}
+                        />
+                    ) : isShortcutsSidebarVisible ? (
+                        <ShortcutsSidebar 
+                            onClose={() => setIsShortcutsSidebarVisible(false)}
                             t={t}
                         />
                     ) : null}

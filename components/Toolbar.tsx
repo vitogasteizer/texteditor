@@ -531,7 +531,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         const tempFontName = `__temp__${Date.now()}`;
         document.execCommand('fontName', false, tempFontName);
         
-        const fontElements = editorRef.current?.querySelectorAll<HTMLElement>(`font[face="${tempFontName}"]`);
+        // FIX: Removed <HTMLElement> generic from querySelectorAll as it was causing an "Untyped function calls may not accept type arguments" error.
+        const fontElements = editorRef.current?.querySelectorAll(`font[face="${tempFontName}"]`);
         
         fontElements?.forEach(fontElement => {
             const span = document.createElement('span');
@@ -563,10 +564,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         selection.addRange(range);
     } else {
         document.execCommand('fontSize', false, '1'); // Use a placeholder size
-        const fontElements = editorRef.current?.querySelectorAll<HTMLElement>('font[size="1"]');
+        // FIX: Removed <HTMLElement> generic from querySelectorAll as it was causing an "Untyped function calls may not accept type arguments" error.
+        const fontElements = editorRef.current?.querySelectorAll('font[size="1"]');
         fontElements?.forEach(fontElement => {
             fontElement.removeAttribute('size');
-            fontElement.style.fontSize = `${sizeInPt}pt`;
+            // FIX: Cast to HTMLElement to access the style property since querySelectorAll without generics returns Element.
+            (fontElement as HTMLElement).style.fontSize = `${sizeInPt}pt`;
         });
     }
     requestAnimationFrame(updateToolbarState);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2Icon, RowInsertTopIcon, RowInsertBottomIcon, ColumnInsertLeftIcon, ColumnInsertRightIcon, MergeCellsIcon, SplitCellIcon } from '../icons/EditorIcons';
 
@@ -80,7 +81,6 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
             };
         } else if (mode === 'left' || mode === 'right') {
             newStyles = {
-// FIX: Assert 'relative' as a constant to match the literal type expected by CSSProperties.
                 position: 'relative' as const,
                 float: mode,
                 margin: mode === 'left' ? '0.5rem 1rem 0.5rem 0' : '0.5rem 0 0.5rem 1rem',
@@ -90,7 +90,6 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
             };
         } else { // topBottom
             newStyles = {
-// FIX: Assert 'relative' as a constant to match the literal type expected by CSSProperties.
                 position: 'relative' as const,
                 float: 'none' as const,
                 margin: '',
