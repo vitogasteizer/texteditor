@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { Doc } from '../App';
-import { GridViewIcon, ListViewIcon, MoreVerticalIcon, FileTextIcon, Trash2Icon, EditIcon, ArrowLeftIcon, CopyIcon } from './icons/EditorIcons';
+import { GridViewIcon, ListViewIcon, MoreVerticalIcon, FileTextIcon, Trash2Icon, EditIcon, ArrowLeftIcon, CopyIcon, EyeIcon } from './icons/EditorIcons';
 
 interface DriveViewProps {
   documents: Doc[];
@@ -9,6 +9,7 @@ interface DriveViewProps {
   onRenameDocument: (docId: string, newName: string) => void;
   onDeleteDocument: (docId: string) => void;
   onDuplicateDocument: (docId: string) => void;
+  onPreviewDocument: (docId: string) => void;
   onCreateNewDocument: () => void;
   onClose: () => void;
   currentDocId: string | null;
@@ -19,8 +20,9 @@ const DocumentItemMenu: React.FC<{
   onRename: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
+  onPreview: () => void;
   t: (key: string) => string;
-}> = ({ onRename, onDelete, onDuplicate, t }) => {
+}> = ({ onRename, onDelete, onDuplicate, onPreview, t }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +48,12 @@ const DocumentItemMenu: React.FC<{
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-200 dark:border-gray-700">
           <button
+            onClick={(e) => { e.stopPropagation(); onPreview(); setIsOpen(false); }}
+            className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+          >
+            <EyeIcon className="w-4 h-4 mr-2" /> {t('drive.preview')}
+          </button>
+           <button
             onClick={(e) => { e.stopPropagation(); onRename(); setIsOpen(false); }}
             className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
           >
@@ -76,8 +84,9 @@ const DocumentItem: React.FC<{
   onRenameDocument: (docId: string, newName: string) => void;
   onDeleteDocument: (docId: string) => void;
   onDuplicateDocument: (docId: string) => void;
+  onPreviewDocument: (docId: string) => void;
   t: (key: string, replacements?: { [key: string]: string | number }) => string;
-}> = ({ doc, viewMode, onOpenDocument, onRenameDocument, onDeleteDocument, onDuplicateDocument, t }) => {
+}> = ({ doc, viewMode, onOpenDocument, onRenameDocument, onDeleteDocument, onDuplicateDocument, onPreviewDocument, t }) => {
   
   const handleRename = () => {
     const newName = prompt(t('drive.renamePrompt'), doc.name);
@@ -94,6 +103,10 @@ const DocumentItem: React.FC<{
   
   const handleDuplicate = () => {
       onDuplicateDocument(doc.id);
+  };
+  
+  const handlePreview = () => {
+      onPreviewDocument(doc.id);
   };
 
   const formattedDate = new Date(doc.updatedAt).toLocaleDateString(undefined, {
@@ -115,7 +128,7 @@ const DocumentItem: React.FC<{
             <p className="text-xs text-gray-500 dark:text-gray-400">{t('drive.updated')}: {formattedDate}</p>
           </div>
           <div className="flex-shrink-0 -mr-2">
-            <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} onDuplicate={handleDuplicate} t={t} />
+            <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} onDuplicate={handleDuplicate} onPreview={handlePreview} t={t} />
           </div>
         </div>
       </div>
@@ -135,7 +148,7 @@ const DocumentItem: React.FC<{
         {t('drive.updated')}: {formattedDate}
       </div>
       <div className="ml-4 flex-shrink-0">
-         <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} onDuplicate={handleDuplicate} t={t} />
+         <DocumentItemMenu onRename={handleRename} onDelete={handleDelete} onDuplicate={handleDuplicate} onPreview={handlePreview} t={t} />
       </div>
     </div>
   );

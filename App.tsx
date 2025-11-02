@@ -8,7 +8,7 @@ import MenuBar from './components/MenuBar';
 import SourceCodeModal from './components/SourceCodeModal';
 import WordCountModal from './components/WordCountModal';
 import UrlInputModal from './components/UrlInputModal';
-import SavedDocumentsView from './components/SavedDocumentsView';
+import DriveView from './components/DriveView';
 import CommentsSidebar from './components/CommentsSidebar';
 import SettingsSidebar from './components/SettingsSidebar';
 import SpecialCharactersModal from './components/SpecialCharactersModal';
@@ -17,6 +17,9 @@ import ObjectWrapper from './components/ObjectWrapper';
 import FloatingToolbar from './components/FloatingToolbar';
 import CommentInputModal from './components/CommentInputModal';
 import AiSidekick from './components/AiSidekick';
+import PageSetupModal from './components/PageSetupModal';
+import DocumentPreviewModal from './components/DocumentPreviewModal';
+import AboutModal from './components/AboutModal';
 import { translations, Language } from './lib/translations';
 
 
@@ -28,6 +31,15 @@ export interface Comment {
   selectionId: string;
 }
 
+export type PageSize = 'Letter' | 'A4' | 'Legal';
+export type PageOrientation = 'portrait' | 'landscape';
+export interface PageMargins {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+}
+
 export interface Doc {
   id:string;
   name: string;
@@ -35,6 +47,10 @@ export interface Doc {
   comments: Comment[];
   createdAt: number;
   updatedAt: number;
+  pageSize?: PageSize;
+  pageOrientation?: PageOrientation;
+  pageMargins?: PageMargins;
+  pageColor?: string;
 }
 
 export interface WordCountStats {
@@ -62,9 +78,6 @@ export interface ImageOptions {
     height: string;
     align: 'none' | 'left' | 'center' | 'right' | 'absolute';
 }
-
-export type PageSize = 'Letter' | 'A4' | 'Legal';
-export type PageOrientation = 'portrait' | 'landscape';
 
 export type ChatMessage = {
     role: 'user' | 'model';
@@ -108,7 +121,7 @@ async function decodeAudioData(
 
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('en');
-  const [view, setView] = useState<'editor' | 'savedDocuments'>('editor');
+  const [view, setView] = useState<'editor' | 'drive'>('editor');
   const [documents, setDocuments] = useState<Doc[]>([]);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [content, setContent] = useState<string>('<p><br></p>');
@@ -126,6 +139,10 @@ const App: React.FC = () => {
   const [isSpecialCharVisible, setIsSpecialCharVisible] = useState(false);
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [isAiSidekickVisible, setIsAiSidekickVisible] = useState(false);
+  const [isPageSetupVisible, setIsPageSetupVisible] = useState(false);
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+  const [previewDocContent, setPreviewDocContent] = useState('');
+  const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -141,6 +158,8 @@ const App: React.FC = () => {
 
   const [pageSize, setPageSize] = useState<PageSize>('Letter');
   const [pageOrientation, setPageOrientation] = useState<PageOrientation>('portrait');
+  const [pageColor, setPageColor] = useState('#FFFFFF');
+  const [pageMargins, setPageMargins] = useState<PageMargins>({ top: 1, bottom: 1, left: 1, right: 1 });
 
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
@@ -221,10 +240,19 @@ const App: React.FC = () => {
     if (currentDocId) {
         autoSaveTimerRef.current = window.setTimeout(() => {
             setIsSaving(true);
+            const docToSave: Partial<Doc> = {
+                content: editorRef.current?.innerHTML || content,
+                comments,
+                updatedAt: Date.now(),
+                pageSize,
+                pageOrientation,
+                pageMargins,
+                pageColor,
+            };
             setDocuments(docs =>
                 docs.map(doc =>
                     doc.id === currentDocId
-                        ? { ...doc, content: editorRef.current?.innerHTML || content, comments, updatedAt: Date.now() }
+                        ? { ...doc, ...docToSave }
                         : doc
                 )
             );
@@ -238,7 +266,7 @@ const App: React.FC = () => {
             clearTimeout(autoSaveTimerRef.current);
         }
     };
-  }, [content, comments, currentDocId]);
+  }, [content, comments, currentDocId, pageSize, pageOrientation, pageMargins, pageColor]);
 
   // Format painter cursor effect
   useEffect(() => {
@@ -349,6 +377,9 @@ const App: React.FC = () => {
   };
 
   const handleNewDocument = () => {
+    const defaultsString = localStorage.getItem('defaultPageSettings');
+    const defaults = defaultsString ? JSON.parse(defaultsString) : {};
+
     setContent('<p><br></p>');
     setComments([]);
     setCurrentDocId(null);
@@ -360,8 +391,10 @@ const App: React.FC = () => {
     setSelectedElement(null);
     setFloatingToolbar(null);
     setIsAiSidekickVisible(false);
-    setPageSize('Letter');
-    setPageOrientation('portrait');
+    setPageSize(defaults.size || 'Letter');
+    setPageOrientation(defaults.orientation || 'portrait');
+    setPageMargins(defaults.margins || { top: 1, bottom: 1, left: 1, right: 1 });
+    setPageColor(defaults.color || '#FFFFFF');
     focusEditor();
   };
 
@@ -372,7 +405,7 @@ const App: React.FC = () => {
       setDocuments(docs =>
         docs.map(doc =>
           doc.id === currentDocId
-            ? { ...doc, content: currentContent, comments, updatedAt: now }
+            ? { ...doc, content: currentContent, comments, updatedAt: now, pageSize, pageOrientation, pageMargins, pageColor }
             : doc
         )
       );
@@ -396,6 +429,10 @@ const App: React.FC = () => {
         comments,
         createdAt: now,
         updatedAt: now,
+        pageSize,
+        pageOrientation,
+        pageMargins,
+        pageColor,
     };
     setDocuments(docs => [...docs, newDoc]);
     setCurrentDocId(newDoc.id);
@@ -418,6 +455,10 @@ const App: React.FC = () => {
       setSelectedElement(null);
       setFloatingToolbar(null);
       setIsAiSidekickVisible(false);
+      setPageSize(docToOpen.pageSize || 'Letter');
+      setPageOrientation(docToOpen.pageOrientation || 'portrait');
+      setPageMargins(docToOpen.pageMargins || { top: 1, bottom: 1, left: 1, right: 1 });
+      setPageColor(docToOpen.pageColor || '#FFFFFF');
       setView('editor');
     }
   };
@@ -433,6 +474,29 @@ const App: React.FC = () => {
       handleNewDocument();
     }
     setToast(t('toasts.docDeleted'));
+  };
+
+  const handleDuplicateDocument = (docId: string) => {
+    const docToDuplicate = documents.find(doc => doc.id === docId);
+    if (!docToDuplicate) return;
+    const now = Date.now();
+    const newDoc: Doc = {
+        ...docToDuplicate,
+        id: `doc_${now}`,
+        name: t('drive.copyOf', { name: docToDuplicate.name }),
+        createdAt: now,
+        updatedAt: now,
+    };
+    setDocuments(docs => [...docs, newDoc]);
+    setToast(t('toasts.docDuplicated'));
+  };
+
+  const handlePreviewDocument = (docId: string) => {
+    const docToPreview = documents.find(doc => doc.id === docId);
+    if (docToPreview) {
+      setPreviewDocContent(docToPreview.content);
+      setIsPreviewModalVisible(true);
+    }
   };
 
   const handleExportToWord = () => {
@@ -459,10 +523,10 @@ const App: React.FC = () => {
     const pageElement = editorRef.current;
     if (pageElement) {
         const options = {
-            margin:       [0.5, 0.5, 0.5, 0.5],
+            margin:       [pageMargins.top, pageMargins.right, pageMargins.bottom, pageMargins.left],
             filename:     'document.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: pageColor },
             jsPDF:        { unit: 'in', format: pageSize.toLowerCase() as any, orientation: pageOrientation },
             pagebreak:    { mode: ['css', 'legacy'] }
         };
@@ -483,10 +547,13 @@ const App: React.FC = () => {
     if (printWindow) {
       printWindow.document.write('<html><head><title>Document</title>');
       printWindow.document.write(`<style>
-        body { font-family: 'Inter', sans-serif; line-height: 1.6; }
+        body { font-family: 'Inter', sans-serif; line-height: 1.6; background-color: ${pageColor}; }
         @page {
             size: ${pageSize.toLowerCase()} ${pageOrientation};
-            margin: 1in;
+            margin-top: ${pageMargins.top}in;
+            margin-right: ${pageMargins.right}in;
+            margin-bottom: ${pageMargins.bottom}in;
+            margin-left: ${pageMargins.left}in;
         }
         table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
         th, td { border: 1px solid #ddd; padding: 8px; }
@@ -1400,6 +1467,7 @@ const App: React.FC = () => {
               if (part.inlineData) {
                 const base64ImageBytes: string = part.inlineData.data;
                 const newSrc = `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+                imageElement.style.backgroundColor = 'transparent';
                 imageElement.src = newSrc;
                 handleContentChange(editorRef.current!.innerHTML);
                 setToast(t('toasts.aiImageEdited'));
@@ -1424,9 +1492,36 @@ const App: React.FC = () => {
   };
 
   const { width, height } = pageDimensions[pageSize];
-  const pageStyle: React.CSSProperties = pageOrientation === 'portrait'
-      ? { width, minHeight: height }
-      : { width: height, minHeight: width };
+  const pageStyle: React.CSSProperties = {
+    ...(pageOrientation === 'portrait'
+        ? { width, minHeight: height }
+        : { width: height, minHeight: width }),
+    backgroundColor: pageColor,
+    padding: `${pageMargins.top}in ${pageMargins.right}in ${pageMargins.bottom}in ${pageMargins.left}in`,
+  };
+  
+  const handleApplyPageSetup = (settings: {
+    size: PageSize,
+    orientation: PageOrientation,
+    margins: PageMargins,
+    color: string,
+    setAsDefault: boolean
+  }) => {
+    setPageSize(settings.size);
+    setPageOrientation(settings.orientation);
+    setPageMargins(settings.margins);
+    setPageColor(settings.color);
+    if (settings.setAsDefault) {
+        localStorage.setItem('defaultPageSettings', JSON.stringify({
+            size: settings.size,
+            orientation: settings.orientation,
+            margins: settings.margins,
+            color: settings.color,
+        }));
+    }
+    setIsPageSetupVisible(false);
+  };
+
 
   return (
     <div className="h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
@@ -1436,7 +1531,7 @@ const App: React.FC = () => {
                  <MenuBar 
                   onNewDocument={handleNewDocument}
                   onSave={handleSaveDocument}
-                  onViewSaved={() => setView('savedDocuments')}
+                  onViewSaved={() => setView('drive')}
                   onExportToWord={handleExportToWord}
                   onExportToPdf={handleExportToPdf}
                   onPrint={() => printOrPreview(true)}
@@ -1468,8 +1563,8 @@ const App: React.FC = () => {
                   isSaving={isSaving}
                   lastSaved={lastSaved}
                   isDocumentSaved={!!currentDocId}
-                  onSetPageSize={setPageSize}
-                  onSetPageOrientation={setPageOrientation}
+                  onOpenPageSetup={() => setIsPageSetupVisible(true)}
+                  onOpenAboutModal={() => setIsAboutModalVisible(true)}
                   onInsertPageBreak={handleInsertPageBreak}
                   onSetLanguage={setLanguage}
                   onReadAloud={handleReadAloud}
@@ -1502,7 +1597,7 @@ const App: React.FC = () => {
                     >
                         <div 
                             id="editor-page" 
-                            className="relative mx-auto bg-white dark:bg-gray-900 shadow-2xl"
+                            className="relative mx-auto bg-white dark:bg-gray-900 shadow-2xl box-content"
                             style={pageStyle}
                         >
                             <Editor 
@@ -1580,12 +1675,16 @@ const App: React.FC = () => {
             />
         </div>
       ) : (
-        <SavedDocumentsView
+        <DriveView
           documents={documents}
           onOpenDocument={handleOpenDocument}
           onRenameDocument={handleRenameDocument}
           onDeleteDocument={handleDeleteDocument}
-          onNewDocument={handleNewDocument}
+          onDuplicateDocument={handleDuplicateDocument}
+          onPreviewDocument={handlePreviewDocument}
+          onCreateNewDocument={handleNewDocument}
+          onClose={() => setView('editor')}
+          currentDocId={currentDocId}
           t={t}
         />
       )}
@@ -1626,6 +1725,29 @@ const App: React.FC = () => {
       />
       <SpecialCharactersModal isOpen={isSpecialCharVisible} onClose={() => setIsSpecialCharVisible(false)} onInsert={handleInsertCharacter} t={t} />
       <CommentInputModal isOpen={isCommentModalVisible} onClose={() => setIsCommentModalVisible(false)} onSubmit={handleAddComment} t={t} />
+      <PageSetupModal 
+        isOpen={isPageSetupVisible} 
+        onClose={() => setIsPageSetupVisible(false)} 
+        onApply={handleApplyPageSetup}
+        pageSettings={{
+            size: pageSize,
+            orientation: pageOrientation,
+            margins: pageMargins,
+            color: pageColor,
+        }}
+        t={t}
+      />
+      <DocumentPreviewModal 
+        isOpen={isPreviewModalVisible} 
+        onClose={() => setIsPreviewModalVisible(false)} 
+        content={previewDocContent} 
+        t={t} 
+      />
+      <AboutModal 
+        isOpen={isAboutModalVisible} 
+        onClose={() => setIsAboutModalVisible(false)} 
+        t={t} 
+      />
     </div>
   );
 };

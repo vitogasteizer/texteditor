@@ -153,7 +153,7 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
             // Auto text color contrast logic
             const textColor = getTextColorForBackground(finalBgColor);
             const innerEditableDiv = editingElement.querySelector('[contenteditable="true"]');
-            if (innerEditableDiv) {
+            if (innerEditableDiv instanceof HTMLElement) {
                 (innerEditableDiv as HTMLElement).style.color = textColor;
             }
 
@@ -172,9 +172,9 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
     let newStyles: React.CSSProperties = {};
     if (mode === 'absolute') {
         newStyles = {
-            // FIX: Assert 'absolute' as a constant to match the literal type expected by CSSProperties.
+// FIX: Assert 'absolute' as a constant to match the literal type expected by CSSProperties.
             position: 'absolute' as const,
-            // FIX: Assert 'none' as a constant to match the literal type expected by CSSProperties.
+// FIX: Assert 'none' as a constant to match the literal type expected by CSSProperties.
             float: 'none' as const,
             margin: '',
             top: styles.top || '100px',

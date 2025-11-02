@@ -55,7 +55,7 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
       onClick={onClick}
       contentEditable={true}
       suppressContentEditableWarning={true}
-      className="relative px-16 py-20 min-h-full focus:outline-none prose dark:prose-invert max-w-none prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline"
+      className="relative min-h-full focus:outline-none prose dark:prose-invert max-w-none prose-a:text-blue-600 dark:prose-a:text-blue-400"
       // The initial content is set via useEffect to avoid hydration issues.
     />
   );

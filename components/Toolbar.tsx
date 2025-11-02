@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, ChevronRightIcon, TextShadowIcon, SparklesIcon, ChecklistIcon } from './icons/EditorIcons';
+import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, TextShadowIcon, SparklesIcon, ChecklistIcon, ChevronRightIcon } from './icons/EditorIcons';
 import TextShadowDropdown from './TextShadowDropdown';
 
 interface ToolbarProps {
@@ -13,7 +13,10 @@ interface ToolbarProps {
   t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
 
-interface FontWeight { value: string; label: string; }
+interface FontWeight {
+  label: string;
+  value: number; // e.g. 400 for normal, 700 for bold
+}
 interface FontFamily {
   value: string;
   label: string;
@@ -21,44 +24,27 @@ interface FontFamily {
 }
 
 const fontFamilies: FontFamily[] = [
-  { value: 'Arial', label: 'Arial' },
-  {
-    value: 'Noto Sans Georgian',
-    label: 'Noto Sans Georgian',
-    weights: [
-        { value: '300', label: 'Light' }, { value: '400', label: 'Normal' }, { value: '500', label: 'Medium' },
-        { value: '700', label: 'Bold' }, { value: '900', label: 'Black' },
-    ],
-  },
-  {
-    value: 'FiraGO',
-    label: 'FiraGO',
-     weights: [
-        { value: '300', label: 'Light' }, { value: '400', label: 'Normal' }, { value: '500', label: 'Medium' },
-        { value: '700', label: 'Bold' }, { value: '900', label: 'Black' },
-    ],
-  },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Verdana', label: 'Verdana' },
-  { 
-    value: 'Roboto', 
-    label: 'Roboto',
-    weights: [
-        { value: '300', label: 'Light' }, { value: '400', label: 'Normal' }, { value: '500', label: 'Medium' },
-        { value: '700', label: 'Bold' }, { value: '900', label: 'Black' },
-    ],
-  },
-  { value: 'Courier New', label: 'Courier New' },
-  { value: 'Lobster', label: 'Lobster' },
+  // System fonts
+  { value: 'Arial, Helvetica, sans-serif', label: 'Arial' },
+  { value: 'Verdana, Geneva, sans-serif', label: 'Verdana' },
+  { value: 'Georgia, serif', label: 'Georgia' },
+  { value: "'Times New Roman', Times, serif", label: 'Times New Roman' },
+  { value: "'Courier New', Courier, monospace", label: 'Courier New' },
+  // Georgian fonts from Google Fonts
+  { value: "'Noto Sans Georgian', sans-serif", label: 'Noto Sans Georgian', weights: [{ label: 'Light', value: 300 }, { label: 'Normal', value: 400 }, { label: 'Medium', value: 500 }, { label: 'Bold', value: 700 }, { label: 'Black', value: 900 }] },
+  { value: "'FiraGO', sans-serif", label: 'FiraGO', weights: [{ label: 'Light', value: 300 }, { label: 'Normal', value: 400 }, { label: 'Medium', value: 500 }, { label: 'Bold', value: 700 }, { label: 'Black', value: 900 }] },
+  { value: "'Arimo', sans-serif", label: 'Arimo', weights: [{ label: 'Light', value: 300 }, { label: 'Normal', value: 400 }, { label: 'Medium', value: 500 }, { label: 'Bold', value: 700 }, { label: 'Black', value: 900 }] },
+  // Other Google Fonts
+  { value: "'Roboto', sans-serif", label: 'Roboto', weights: [{ label: 'Light', value: 300 }, { label: 'Normal', value: 400 }, { label: 'Medium', value: 500 }, { label: 'Bold', value: 700 }] },
+  { value: "'Lato', sans-serif", label: 'Lato', weights: [{ label: 'Light', value: 300 }, { label: 'Normal', value: 400 }, { label: 'Bold', value: 700 }] },
+  { value: "'Montserrat', sans-serif", label: 'Montserrat', weights: [{ label: 'Light', value: 300 }, { label: 'Normal', value: 400 }, { label: 'Medium', value: 500 }, { label: 'Bold', value: 700 }] },
+  { value: "'Oswald', sans-serif", label: 'Oswald' },
+  { value: "'Raleway', sans-serif", label: 'Raleway' },
+  { value: "'Poppins', sans-serif", label: 'Poppins' },
+  { value: "'Merriweather', serif", label: 'Merriweather' },
+  { value: "'Playfair Display', serif", label: 'Playfair Display' },
+  { value: "'Lobster', cursive", label: 'Lobster' },
 ];
-
-const fontSizes = [
-  { value: '1', label: '8pt' }, { value: '2', label: '10pt' }, { value: '3', label: '12pt' },
-  { value: '4', label: '14pt' }, { value: '5', label: '18pt' }, { value: '6', label: '24pt' },
-  { value: '7', label: '36pt' },
-];
-const sizeValueToLabelMap = new Map(fontSizes.map(s => [s.value, s.label]));
 
 const ToolbarButton: React.FC<{ onAction: (e: React.MouseEvent<HTMLButtonElement>) => void; children: React.ReactNode; tooltip: string; isActive?: boolean; buttonRef?: React.RefObject<HTMLButtonElement> }> = ({ onAction, children, tooltip, isActive = false, buttonRef }) => {
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => { e.preventDefault(); onAction(e); };
@@ -74,103 +60,120 @@ const ToolbarButton: React.FC<{ onAction: (e: React.MouseEvent<HTMLButtonElement
   );
 };
 
-const FontFamilyDropdown: React.FC<{
-    label: string;
-    items: FontFamily[];
-    onSelect: (family: string, weight?: string) => void;
-    t: (key: string) => string;
-}> = ({ label, items, onSelect, t }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-    const buttonRef = useRef<HTMLButtonElement>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
-    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+const FontFamilyMenuItem: React.FC<{
+    item: FontFamily;
+    onSelect: (family: string, weight?: number) => void;
+}> = ({ item, onSelect }) => {
+    const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+    const itemRef = useRef<HTMLButtonElement>(null);
+    const submenuTimer = useRef<number | null>(null);
+    const [submenuPosition, setSubmenuPosition] = useState<{ top: string; left: string } | null>(null);
 
-    const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        if (buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setMenuPosition({ top: rect.bottom + 4, left: rect.left });
-        }
-        setIsOpen(prev => !prev);
-    };
-
-    const handleSelect = (family: string, weight?: string) => {
-        onSelect(family, weight);
-        setIsOpen(false);
-        setOpenSubmenu(null);
-    };
-    
-    const handleItemClick = (item: FontFamily) => {
+    const handleMouseEnter = () => {
+        if (submenuTimer.current) clearTimeout(submenuTimer.current);
         if (item.weights) {
-            setOpenSubmenu(prev => prev === item.value ? null : item.value);
-        } else {
-            handleSelect(item.value);
+            if (itemRef.current) {
+                const rect = itemRef.current.getBoundingClientRect();
+                setSubmenuPosition({ top: `${rect.top}px`, left: `${rect.right + 4}px` });
+            }
+            setIsSubmenuOpen(true);
         }
     };
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as Node;
-            const isClickingButton = buttonRef.current && buttonRef.current.contains(target);
-            const isClickingMenu = menuRef.current && menuRef.current.contains(target);
-            if (!isClickingButton && !isClickingMenu) {
-                setIsOpen(false);
-                setOpenSubmenu(null);
-            }
-        };
-        const handleScroll = () => {
-          setIsOpen(false);
-          setOpenSubmenu(null);
-        }
+    const handleMouseLeave = () => {
+        submenuTimer.current = window.setTimeout(() => {
+            setIsSubmenuOpen(false);
+        }, 200);
+    };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('scroll', handleScroll, true);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('scroll', handleScroll, true);
-        };
-    }, [isOpen]);
-    
-    const getWeightLabel = (label: string): string => {
-        return t(`toolbar.fontWeights.${label.toLowerCase()}`) || label;
-    }
-
-
-    const MenuPortal = menuPosition ? createPortal(
-        <div ref={menuRef} style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }} className="fixed w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700" role="menu">
-            {items.map(item => (
-                <div key={item.value} className="relative">
-                    <button onMouseDown={(e) => { e.preventDefault(); handleItemClick(item); }} className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-between">
-                        <span style={{ fontFamily: item.value }}>{item.label}</span>
-                        {item.weights && <ChevronRightIcon />}
-                    </button>
-                    {item.weights && openSubmenu === item.value && (
-                        <div className="absolute left-full -top-1 ml-1 w-40 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
-                            {item.weights.map(weight => (
-                                <button key={weight.value} onMouseDown={(e) => { e.preventDefault(); handleSelect(item.value, weight.value); }} className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <span style={{ fontFamily: item.value, fontWeight: parseInt(weight.value) }}>{getWeightLabel(weight.label)}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+    const SubmenuPortal = (item.weights && isSubmenuOpen && submenuPosition) ? createPortal(
+        <div 
+            data-menu-part="true"
+            className="fixed w-40 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-[60] border border-gray-200 dark:border-gray-700"
+            style={{ top: submenuPosition.top, left: submenuPosition.left }}
+            onMouseEnter={handleMouseEnter} 
+            onMouseLeave={handleMouseLeave}
+        >
+            {item.weights.map(weight => (
+                <button key={weight.value} onMouseDown={(e) => { e.preventDefault(); onSelect(item.value, weight.value); }} className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <span style={{ fontFamily: item.value, fontWeight: weight.value }}>{weight.label}</span>
+                </button>
             ))}
         </div>,
         document.body
     ) : null;
 
     return (
-        <>
-            <button ref={buttonRef} onMouseDown={handleToggle} aria-haspopup="true" aria-expanded={isOpen} className="flex items-center gap-1 px-2 py-1.5 text-sm rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150">
-                <span className="truncate max-w-[150px]">{label}</span>
+        <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+            <button
+                ref={itemRef}
+                onMouseDown={(e) => { e.preventDefault(); if (!item.weights) onSelect(item.value); }}
+                className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-between"
+            >
+                <span style={{ fontFamily: item.value }}>{item.label}</span>
+                {item.weights && <ChevronRightIcon />}
+            </button>
+            {SubmenuPortal}
+        </div>
+    );
+};
+
+
+const FontFamilyDropdown: React.FC<{
+    label: string;
+    items: FontFamily[];
+    onSelect: (family: string, weight?: number) => void;
+}> = ({ label, items, onSelect }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+    
+    const handleSelect = (family: string, weight?: number) => {
+        onSelect(family, weight);
+        setIsOpen(false);
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('[data-menu-part="true"]')) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
+    const MenuPortal = createPortal(
+        <div data-menu-part="true" ref={menuRef} style={{ 
+            top: `${containerRef.current?.getBoundingClientRect().bottom + 4}px`, 
+            left: `${containerRef.current?.getBoundingClientRect().left}px` 
+        }} className="fixed w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto" role="menu">
+            {items.map(item => (
+                <FontFamilyMenuItem key={item.value} item={item} onSelect={handleSelect} />
+            ))}
+        </div>,
+        document.body
+    );
+
+    return (
+        <div ref={containerRef} data-menu-part="true" className="relative flex items-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 focus-within:ring-1 focus-within:ring-blue-500">
+            <div className="flex-grow pl-2 pr-1 py-1.5 text-sm text-left truncate" style={{ maxWidth: '150px' }}>
+                {label}
+            </div>
+            <div className="h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+            <button onMouseDown={(e) => { e.preventDefault(); setIsOpen(prev => !prev); }} aria-haspopup="true" aria-expanded={isOpen} className="p-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-700">
                 <ChevronDownIcon />
             </button>
             {isOpen && MenuPortal}
-        </>
+        </div>
     );
 };
+
 
 const ToolbarDropdown: React.FC<{ label: React.ReactNode; items: { value: string; label: string }[]; onSelect: (value: string) => void; widthClass?: string; }> = ({ label, items, onSelect, widthClass = "w-48" }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -248,11 +251,124 @@ const ColorPicker: React.FC<{ onAction: (color: string) => void; tooltip: string
     );
 };
 
+const fontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48, 60, 72];
+
+const FontSizeCombobox: React.FC<{ value: string; onChange: (size: number) => void; }> = ({ value, onChange }) => {
+    const [inputValue, setInputValue] = useState(String(parseInt(value, 10) || 12));
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const debounceTimer = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (document.activeElement !== inputRef.current) {
+            setInputValue(String(parseInt(value, 10) || 12));
+        }
+    }, [value]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        };
+    }, []);
+
+    const handleValueChange = (newStringValue: string) => {
+        setInputValue(newStringValue);
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+        debounceTimer.current = window.setTimeout(() => {
+            const size = parseInt(newStringValue, 10);
+            if (!isNaN(size) && size > 0) {
+                onChange(size);
+            }
+        }, 300);
+    };
+
+    const handleBlur = () => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        const size = parseInt(inputValue, 10);
+        if (!isNaN(size) && size > 0) {
+            if(size !== (parseInt(value, 10) || 12)) onChange(size);
+        } else {
+            setInputValue(String(parseInt(value, 10) || 12));
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            const size = parseInt(inputValue, 10);
+            if (!isNaN(size) && size > 0) {
+                onChange(size);
+            }
+            inputRef.current?.blur();
+        }
+    };
+    
+    const handleSelect = (size: number) => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        setInputValue(String(size));
+        onChange(size);
+        setIsOpen(false);
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen]);
+
+    return (
+        <div ref={containerRef} className="relative flex items-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 focus-within:ring-1 focus-within:ring-blue-500">
+            <input
+                ref={inputRef}
+                type="number"
+                value={inputValue}
+                onChange={(e) => handleValueChange(e.target.value)}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                className="w-10 pl-2 py-1.5 text-center bg-transparent focus:outline-none text-sm [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <div className="h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+            <button onMouseDown={(e) => { e.preventDefault(); setIsOpen(prev => !prev); }} className="p-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                <ChevronDownIcon />
+            </button>
+            {isOpen && createPortal(
+                <div 
+                    style={{ 
+                        top: `${containerRef.current?.getBoundingClientRect().bottom + 4}px`, 
+                        left: `${containerRef.current?.getBoundingClientRect().left}px`,
+                        width: `${containerRef.current?.getBoundingClientRect().width}px`
+                    }}
+                    className="fixed bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                >
+                    {fontSizes.map(size => (
+                        <button 
+                            key={size}
+                            onMouseDown={(e) => { e.preventDefault(); handleSelect(size); }}
+                            className="w-full text-center px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                            {size}
+                        </button>
+                    ))}
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
+
+
 const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormatPainterActive, onToggleAiSidekick, onInsertChecklist, t }) => {
     const [toolbarState, setToolbarState] = useState({
         fontName: 'Arial',
+        fontWeight: 400,
         fontSize: '12pt',
-        fontWeight: 'Normal',
         bold: false,
         italic: false,
         underline: false,
@@ -274,21 +390,18 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         }
         if (!element) return;
         
-        const weightValueToLabelMap: Record<string, string> = { 
-            '300': t('toolbar.fontWeights.light'), '400': t('toolbar.fontWeights.normal'), 'normal': t('toolbar.fontWeights.normal'), 
-            '500': t('toolbar.fontWeights.medium'), '700': t('toolbar.fontWeights.bold'), 'bold': t('toolbar.fontWeights.bold'), '900': t('toolbar.fontWeights.black')
-        };
-
         const styles = window.getComputedStyle(element as Element);
         const fontName = styles.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Arial';
-        const fontSizeValue = document.queryCommandValue('fontSize');
-        const fontSize = sizeValueToLabelMap.get(fontSizeValue) || '12pt';
-        const fontWeightValue = styles.fontWeight;
-        const fontWeight = weightValueToLabelMap[fontWeightValue] || t('toolbar.fontWeights.normal');
+        const fontWeight = parseInt(styles.fontWeight, 10) || 400;
+        
+        const fontSizePx = parseFloat(styles.fontSize);
+        const fontSizePt = Math.round(fontSizePx * 0.75); // 1px = 0.75pt
+        const fontSize = `${fontSizePt}pt`;
+
         const textShadow = styles.textShadow;
         
         setToolbarState({
-            fontName, fontSize, fontWeight,
+            fontName, fontWeight, fontSize,
             bold: document.queryCommandState('bold'),
             italic: document.queryCommandState('italic'),
             underline: document.queryCommandState('underline'),
@@ -298,7 +411,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
             align: document.queryCommandState('justifyCenter') ? 'center' : document.queryCommandState('justifyRight') ? 'right' : document.queryCommandState('justifyFull') ? 'justify' : 'left',
             textShadow,
         });
-    }, [editorRef, t]);
+    }, [editorRef]);
 
     useEffect(() => {
         const editor = editorRef.current;
@@ -333,7 +446,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
     Object.assign(span.style, style);
 
     try {
-        // Handle cases where selection spans multiple blocks
         const fragment = range.extractContents();
         span.appendChild(fragment);
         range.insertNode(span);
@@ -343,18 +455,10 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         selection.addRange(newRange);
         return span;
     } catch (e) {
-        // Fallback for simpler selections
-        try {
-            range.surroundContents(span);
-            selection.removeAllRanges();
-            const newRange = document.createRange();
-            newRange.selectNode(span);
-            selection.addRange(newRange);
-            return span;
-        } catch (e2) {
-            console.error("Could not wrap selection:", e2);
-            return null;
-        }
+        // This can fail with complex selections (e.g. across table cells).
+        // A more robust implementation would walk the DOM nodes in the range.
+        console.error("Could not wrap selection:", e);
+        return null;
     }
   };
 
@@ -387,7 +491,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
       const parentSpan = getSelectionParentSpan('textShadow');
       if (parentSpan) {
           parentSpan.style.textShadow = 'none';
-          // If no other styles, unwrap the span
           if (!parentSpan.getAttribute('style')) {
               const parent = parentSpan.parentNode;
               while (parentSpan.firstChild) {
@@ -399,36 +502,116 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
       updateToolbarState();
   };
   
-  const applyFontAndWeight = (family: string, weight?: string) => {
+  const applyFont = (family: string, weight?: number) => {
     editorRef.current?.focus();
-    executeCommand('fontName', family);
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
 
+    const newStyles: Partial<CSSStyleDeclaration> = { fontFamily: family };
     if (weight) {
-      wrapSelectionWithSpan({ fontWeight: weight, fontFamily: `'${family}', sans-serif`});
+        newStyles.fontWeight = String(weight);
+    } else {
+        // Reset weight if not specified for this font family
+        newStyles.fontWeight = '';
+    }
+
+    if (range.collapsed) {
+        const span = document.createElement('span');
+        Object.assign(span.style, newStyles);
+        span.innerHTML = '&#8203;'; // Zero-width space
+        range.insertNode(span);
+        range.setStart(span, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    } else {
+        // Use execCommand as a robust way to wrap content, even across block nodes.
+        // We use a temporary, unique font name to find the elements later.
+        const tempFontName = `__temp__${Date.now()}`;
+        document.execCommand('fontName', false, tempFontName);
+        
+        const fontElements = editorRef.current?.querySelectorAll<HTMLElement>(`font[face="${tempFontName}"]`);
+        
+        fontElements?.forEach(fontElement => {
+            const span = document.createElement('span');
+            Object.assign(span.style, newStyles);
+            
+            while(fontElement.firstChild) {
+                span.appendChild(fontElement.firstChild);
+            }
+            fontElement.parentNode?.replaceChild(span, fontElement);
+        });
     }
     requestAnimationFrame(updateToolbarState);
   };
+
+  const applyFontSize = (sizeInPt: number) => {
+    editorRef.current?.focus();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+
+    if (range.collapsed) {
+        const span = document.createElement('span');
+        span.style.fontSize = `${sizeInPt}pt`;
+        span.innerHTML = '&#8203;'; // Zero-width space
+        range.insertNode(span);
+        range.setStart(span, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    } else {
+        document.execCommand('fontSize', false, '1'); // Use a placeholder size
+        const fontElements = editorRef.current?.querySelectorAll<HTMLElement>('font[size="1"]');
+        fontElements?.forEach(fontElement => {
+            fontElement.removeAttribute('size');
+            fontElement.style.fontSize = `${sizeInPt}pt`;
+        });
+    }
+    requestAnimationFrame(updateToolbarState);
+  };
+
 
   const applyLineHeight = (value: string) => {
       editorRef.current?.focus();
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
-      let node = selection.anchorNode;
-      if (!node) return;
-      while(node && node.nodeType !== Node.ELEMENT_NODE) { node = node.parentNode; }
-      let element = node as HTMLElement;
-      while (element && window.getComputedStyle(element).display.includes('inline')) {
-          element = element.parentElement as HTMLElement;
-      }
-      if (element && element !== editorRef.current) { element.style.lineHeight = value; }
-      else if (editorRef.current) {
-          document.execCommand('formatBlock', false, 'p');
-          const parentBlock = window.getSelection()?.getRangeAt(0).commonAncestorContainer.parentElement;
-          if(parentBlock) { parentBlock.style.lineHeight = value; }
+      
+      const range = selection.getRangeAt(0);
+      let commonAncestor = range.commonAncestorContainer;
+      
+      // Find the block-level parent(s) for the selection
+      const getBlockParents = (node: Node): HTMLElement[] => {
+          let current: Node | null = node;
+          const parents: HTMLElement[] = [];
+          while (current && current !== editorRef.current) {
+              if (current.nodeType === Node.ELEMENT_NODE) {
+                  const display = window.getComputedStyle(current as HTMLElement).display;
+                  if (display.includes('block')) {
+                      parents.push(current as HTMLElement);
+                  }
+              }
+              current = current.parentNode;
+          }
+          return parents;
+      };
+
+      const blockParents = getBlockParents(commonAncestor);
+      if (blockParents.length > 0) {
+          blockParents.forEach(p => p.style.lineHeight = value);
+      } else {
+         // If no block parent is found, wrap the current paragraph
+         document.execCommand('formatBlock', false, 'p');
+         const newParentBlock = selection.getRangeAt(0).commonAncestorContainer.parentElement;
+         if (newParentBlock && newParentBlock instanceof HTMLElement) {
+             newParentBlock.style.lineHeight = value;
+         }
       }
   };
 
-  const fontLabel = `${toolbarState.fontName}${toolbarState.fontWeight !== t('toolbar.fontWeights.normal') ? ` (${toolbarState.fontWeight})` : ''}`;
+  const currentFont = fontFamilies.find(f => f.value.toLowerCase().includes(toolbarState.fontName.toLowerCase())) || { label: toolbarState.fontName };
+  const fontLabel = currentFont.label;
   const alignmentIcons = { left: <AlignLeftIcon />, center: <AlignCenterIcon />, right: <AlignRightIcon />, justify: <AlignJustifyIcon />, };
   const lineHeights = [ { value: '1', label: t('toolbar.lineHeights.single') }, { value: '1.5', label: '1.5' }, { value: '2', label: t('toolbar.lineHeights.double') }, { value: '2.5', label: '2.5' }, ];
 
@@ -443,8 +626,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         </div>
         
         <div className="flex items-center gap-2 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-           <FontFamilyDropdown label={fontLabel} items={fontFamilies} onSelect={applyFontAndWeight} t={t} />
-           <ToolbarDropdown label={toolbarState.fontSize} items={fontSizes} onSelect={(value) => executeCommand('fontSize', value)} widthClass="w-24" />
+           <FontFamilyDropdown label={fontLabel} items={fontFamilies} onSelect={applyFont} />
+           <FontSizeCombobox value={toolbarState.fontSize} onChange={applyFontSize} />
         </div>
 
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">

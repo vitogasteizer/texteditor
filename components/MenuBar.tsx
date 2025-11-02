@@ -47,8 +47,8 @@ interface MenuBarProps {
   isSaving: boolean;
   lastSaved: number | null;
   isDocumentSaved: boolean;
-  onSetPageSize: (size: PageSize) => void;
-  onSetPageOrientation: (orientation: PageOrientation) => void;
+  onOpenPageSetup: () => void;
+  onOpenAboutModal: () => void;
   onSetLanguage: (lang: Language) => void;
   onReadAloud: () => void;
   isReadingAloud: boolean;
@@ -225,6 +225,8 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
         { label: t('menu.fileExportWord'), action: props.onExportToWord, icon: <DownloadIcon isMenuIcon /> },
         { label: t('menu.fileExportPdf'), action: props.onExportToPdf, icon: <PdfIcon isMenuIcon /> },
         { separator: true },
+        { label: t('menu.filePageSetup'), action: props.onOpenPageSetup, icon: <FileTextIcon isMenuIcon /> },
+        { separator: true },
         { label: t('menu.filePrint'), action: props.onPrint, icon: <PrinterIcon isMenuIcon /> },
     ];
 
@@ -262,20 +264,11 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
     
     const formatMenuItems: MenuItem[] = [
         {
-            label: t('menu.formatPageSize'),
-            icon: <FileTextIcon isMenuIcon />,
-            items: [
-                { label: t('menu.pageSizeLetter'), action: () => props.onSetPageSize('Letter') },
-                { label: t('menu.pageSizeA4'), action: () => props.onSetPageSize('A4') },
-                { label: t('menu.pageSizeLegal'), action: () => props.onSetPageSize('Legal') },
-            ]
-        },
-        {
             label: t('menu.formatPageOrientation'),
             icon: <RectangleHorizontalIcon isMenuIcon />,
             items: [
-                { label: t('menu.orientationPortrait'), action: () => props.onSetPageOrientation('portrait'), icon: <RectangleVerticalIcon isMenuIcon /> },
-                { label: t('menu.orientationLandscape'), action: () => props.onSetPageOrientation('landscape'), icon: <RectangleHorizontalIcon isMenuIcon /> },
+                { label: t('menu.orientationPortrait'), action: () => {}, icon: <RectangleVerticalIcon isMenuIcon /> },
+                { label: t('menu.orientationLandscape'), action: () => {}, icon: <RectangleHorizontalIcon isMenuIcon /> },
             ]
         }
     ];
@@ -308,13 +301,12 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
         { label: t('menu.viewShowComments'), action: props.onShowComments, icon: <MessageSquareIcon isMenuIcon /> },
     ];
 
-    const helpMenuItems: MenuItem[] = [{ label: t('menu.helpAbout'), action: () => alert('This is an online text editor.'), icon: <InfoIcon isMenuIcon /> }];
+    const helpMenuItems: MenuItem[] = [{ label: t('menu.helpAbout'), action: props.onOpenAboutModal, icon: <InfoIcon isMenuIcon /> }];
 
     const menus = [
         { label: t('menu.file'), items: fileMenuItems },
         { label: t('menu.edit'), items: editMenuItems },
         { label: t('menu.insert'), items: insertMenuItems },
-        { label: t('menu.format'), items: formatMenuItems },
         { label: t('menu.tools'), items: toolsMenuItems },
         { label: t('menu.view'), items: viewMenuItems },
         { label: t('menu.help'), items: helpMenuItems },

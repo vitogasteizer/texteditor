@@ -22,7 +22,7 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
 
     const checkSelectionState = useCallback(() => {
         const selection = window.getSelection();
-        // Fix: Add a null check for selection.anchorNode to prevent passing null to editingElement.contains, satisfying the type checker.
+        // FIX: Add a null check for selection.anchorNode to prevent passing null to editingElement.contains, satisfying the type checker.
         if (!selection || !selection.rangeCount || !selection.anchorNode || !editingElement.contains(selection.anchorNode)) {
             setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
             return;
