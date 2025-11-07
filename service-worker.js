@@ -1,9 +1,9 @@
 const CACHE_NAME = 'avma-text-cache-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/manifest.json'
+  './',
+  './index.html',
+  './index.tsx',
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
