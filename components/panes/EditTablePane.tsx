@@ -1,4 +1,12 @@
 
+
+
+
+
+
+
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2Icon, RowInsertTopIcon, RowInsertBottomIcon, ColumnInsertLeftIcon, ColumnInsertRightIcon, MergeCellsIcon, SplitCellIcon } from '../icons/EditorIcons';
 
@@ -23,7 +31,6 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
 
     const checkSelectionState = useCallback(() => {
         const selection = window.getSelection();
-        // FIX: Add a null check for selection.anchorNode to prevent passing null to editingElement.contains, satisfying the type checker.
         if (!selection || !selection.rangeCount || !selection.anchorNode || !editingElement.contains(selection.anchorNode)) {
             setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
             return;
@@ -31,11 +38,12 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
 
         const selectedCells: HTMLTableCellElement[] = [];
         const cells = editingElement.querySelectorAll('td, th');
-        for (const cell of Array.from(cells)) {
+        // FIX: Use forEach for better type inference on NodeListOf.
+        cells.forEach(cell => {
             if (selection.containsNode(cell, true)) {
                 selectedCells.push(cell as HTMLTableCellElement);
             }
-        }
+        });
         
         const uniqueCells = [...new Set(selectedCells)];
         const isMerged = uniqueCells.length === 1 && (uniqueCells[0].colSpan > 1 || uniqueCells[0].rowSpan > 1);

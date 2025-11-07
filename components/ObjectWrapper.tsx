@@ -1,15 +1,15 @@
 
+
 import React, { useEffect, useRef } from 'react';
 
 interface ObjectWrapperProps {
   targetElement: HTMLElement;
-  containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (element: HTMLElement, styles: React.CSSProperties) => void;
   onDeselect: () => void;
   onDoubleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerRef, onUpdate, onDeselect, onDoubleClick }) => {
+const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, onDeselect, onDoubleClick }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef({
     isDragging: false,
@@ -27,29 +27,26 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, containerR
 
   useEffect(() => {
     const updatePosition = () => {
-      if (!targetElement || !containerRef.current || !wrapperRef.current) return;
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const targetRect = targetElement.getBoundingClientRect();
-      const scrollTop = containerRef.current.scrollTop;
-      const scrollLeft = containerRef.current.scrollLeft;
-
-      wrapperRef.current.style.top = `${targetRect.top - containerRect.top + scrollTop}px`;
-      wrapperRef.current.style.left = `${targetRect.left - containerRect.left + scrollLeft}px`;
-      wrapperRef.current.style.width = `${targetRect.width}px`;
-      wrapperRef.current.style.height = `${targetRect.height}px`;
+      if (!targetElement || !wrapperRef.current) return;
+      
+      // Use offsetTop/Left for positioning, as it's relative to the offsetParent (#editor-page),
+      // which is the same context as the wrapper itself. This is more reliable than getBoundingClientRect
+      // for elements within a scrolling container.
+      wrapperRef.current.style.top = `${targetElement.offsetTop}px`;
+      wrapperRef.current.style.left = `${targetElement.offsetLeft}px`;
+      wrapperRef.current.style.width = `${targetElement.offsetWidth}px`;
+      wrapperRef.current.style.height = `${targetElement.offsetHeight}px`;
     };
 
     updatePosition();
+    // Watch for style changes on the target element to keep the wrapper in sync.
     const observer = new MutationObserver(updatePosition);
-    observer.observe(targetElement, { attributes: true, attributeFilter: ['style'] });
-    
-    containerRef.current?.addEventListener('scroll', updatePosition);
+    observer.observe(targetElement, { attributes: true, attributeFilter: ['style', 'class'] });
 
     return () => {
       observer.disconnect();
-      containerRef.current?.removeEventListener('scroll', updatePosition);
     };
-  }, [targetElement, containerRef]);
+  }, [targetElement]);
   
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, handle?: string) => {
     e.preventDefault();

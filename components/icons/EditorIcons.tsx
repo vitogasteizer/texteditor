@@ -44,11 +44,11 @@ export const AlignRightIcon: React.FC = () => (
 export const AlignJustifyIcon: React.FC = () => (
   <svg {...iconProps}><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
 );
-export const UndoIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
-  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+export const UndoIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
 );
-export const RedoIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
-  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+export const RedoIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
 );
 export const ClearFormattingIcon: React.FC = () => (
     <svg {...iconProps} viewBox="0 0 24 24">
@@ -137,6 +137,9 @@ export const SplitCellIcon: React.FC<{className?: string}> = ({className}) => (
 // Menu Bar Icons
 export const FilePlusIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+);
+export const UploadCloudIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
 );
 export const SaveIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
@@ -269,4 +272,16 @@ export const StopCircleIcon: React.FC<{className?: string}> = ({className}) => (
 );
 export const KeyboardIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
   <svg {...(isMenuIcon ? menuIconProps : iconProps)}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M10 14h4M18 14h.01"/></svg>
+);
+export const PencilIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+);
+export const EraserIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({isMenuIcon, className}) => (
+    <svg {...(isMenuIcon ? menuIconProps : iconProps)} className={className ?? (isMenuIcon ? menuIconProps.className : iconProps.className)}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21H7Z"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg>
+);
+export const SlashIcon: React.FC<{isMenuIcon?: boolean}> = ({isMenuIcon}) => (
+  <svg {...(isMenuIcon ? menuIconProps : iconProps)}><path d="M22 2 2 22"/></svg>
+);
+export const TrashIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg {...iconProps} className={className || iconProps.className}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
 );

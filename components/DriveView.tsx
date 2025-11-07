@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { Doc } from '../App';
-import { GridViewIcon, ListViewIcon, MoreVerticalIcon, FileTextIcon, Trash2Icon, EditIcon, ArrowLeftIcon, CopyIcon, EyeIcon } from './icons/EditorIcons';
+import { GridViewIcon, ListViewIcon, MoreVerticalIcon, FileTextIcon, Trash2Icon, EditIcon, ArrowLeftIcon, CopyIcon, EyeIcon, DownloadIcon, UploadCloudIcon } from './icons/EditorIcons';
 
 interface DriveViewProps {
   documents: Doc[];
@@ -12,6 +12,8 @@ interface DriveViewProps {
   onPreviewDocument: (docId: string) => void;
   onCreateNewDocument: () => void;
   onClose: () => void;
+  onExportAllDocuments: () => void;
+  onImportAllDocuments: (content: string) => void;
   currentDocId: string | null;
   t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
@@ -156,9 +158,32 @@ const DocumentItem: React.FC<{
 
 
 const DriveView: React.FC<DriveViewProps> = (props) => {
-  const { t, currentDocId, onClose, onCreateNewDocument } = props;
+  const { t, currentDocId, onClose, onCreateNewDocument, onExportAllDocuments, onImportAllDocuments } = props;
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const sortedDocs = [...props.documents].sort((a, b) => b.updatedAt - a.updatedAt);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const content = event.target?.result as string;
+            onImportAllDocuments(content);
+        } catch (error) {
+            console.error("Failed to read file", error);
+        }
+    };
+    reader.onerror = (error) => console.error("File reading error", error);
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -179,6 +204,12 @@ const DriveView: React.FC<DriveViewProps> = (props) => {
             >
                 {t('drive.newDoc')}
             </button>
+            <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
+                <button onClick={onExportAllDocuments} title={t('drive.exportAll')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-md"><DownloadIcon /></button>
+                <div className="w-px h-full bg-gray-300 dark:bg-gray-600"></div>
+                <button onClick={handleImportClick} title={t('drive.importAll')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-md"><UploadCloudIcon /></button>
+                <input type="file" ref={importInputRef} className="hidden" accept=".json,application/json" onChange={handleFileImport} />
+            </div>
             <div className="flex items-center bg-gray-100 dark:bg-gray-900/50 p-1 rounded-md">
               <button
                 onClick={() => setViewMode('grid')}

@@ -1,8 +1,6 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
-import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon, KeyboardIcon } from './icons/EditorIcons';
-import type { ShapeType, PageSize, PageOrientation } from '../App';
+import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon, KeyboardIcon, ChecklistIcon, UploadCloudIcon, PencilIcon, SlashIcon } from './icons/EditorIcons';
+import type { ShapeType } from '../App';
 import type { Language } from '../lib/translations';
 
 type MenuItem =
@@ -37,6 +35,7 @@ interface MenuBarProps {
   onInsertShape: (shapeType: ShapeType) => void;
   onInsertHorizontalRule: () => void;
   onInsertPageBreak: () => void;
+  onInsertDrawing: () => void;
   onAddComment: () => void;
   onOpenSourceCode: () => void;
   onOpenWordCount: () => void;
@@ -54,6 +53,9 @@ interface MenuBarProps {
   onSetLanguage: (lang: Language) => void;
   onReadAloud: () => void;
   isReadingAloud: boolean;
+  onToggleSpellcheck: () => void;
+  isSpellcheckEnabled: boolean;
+  onOpenFileImport: () => void;
   t: (key: string, replacements?: { [key: string]: string | number }) => string;
 }
 
@@ -224,6 +226,8 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
         { label: t('menu.fileSave'), action: props.onSave, icon: <SaveIcon isMenuIcon /> },
         { label: t('menu.fileViewSaved'), action: props.onViewSaved, icon: <FolderIcon isMenuIcon /> },
         { separator: true },
+        { label: t('menu.fileImport'), action: props.onOpenFileImport, icon: <UploadCloudIcon isMenuIcon /> },
+        { separator: true },
         { label: t('menu.fileExportWord'), action: props.onExportToWord, icon: <DownloadIcon isMenuIcon /> },
         { label: t('menu.fileExportPdf'), action: props.onExportToPdf, icon: <PdfIcon isMenuIcon /> },
         { separator: true },
@@ -250,12 +254,14 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
     const insertMenuItems: MenuItem[] = [
         { label: t('menu.insertLink'), action: props.onInsertLink, icon: <LinkIcon isMenuIcon /> },
         { label: t('menu.insertImage'), action: props.onInsertImage, icon: <ImageIcon isMenuIcon /> },
+        { label: t('menu.insertDrawing'), action: props.onInsertDrawing, icon: <PencilIcon isMenuIcon /> },
         { label: t('menu.insertTable'), action: props.onInsertTable, icon: <TableIcon isMenuIcon /> },
         { label: t('menu.insertShapes'), icon: <SquareIcon isMenuIcon />, items: [
             { label: t('menu.shapeTextbox'), action: () => props.onInsertShape('textbox'), icon: <TypeIcon isMenuIcon /> },
             { label: t('menu.shapeRectangle'), action: () => props.onInsertShape('rectangle'), icon: <SquareIcon isMenuIcon /> },
             { label: t('menu.shapeCircle'), action: () => props.onInsertShape('circle'), icon: <CircleIcon isMenuIcon /> },
             { label: t('menu.shapeTriangle'), action: () => props.onInsertShape('triangle'), icon: <TriangleIcon isMenuIcon /> },
+            { label: t('menu.shapeLine'), action: () => props.onInsertShape('line'), icon: <SlashIcon isMenuIcon /> },
         ] },
         { label: t('menu.insertHorizontalLine'), action: props.onInsertHorizontalRule, icon: <MinusIcon isMenuIcon /> },
         { label: t('menu.insertPageBreak'), action: props.onInsertPageBreak, icon: <SplitSquareVerticalIcon isMenuIcon /> },
@@ -301,6 +307,8 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
         { label: t('menu.viewFullscreen'), action: props.onToggleFullscreen, icon: <MaximizeIcon isMenuIcon /> },
         { separator: true },
         { label: t('menu.viewShowComments'), action: props.onShowComments, icon: <MessageSquareIcon isMenuIcon /> },
+        { separator: true },
+        { label: props.isSpellcheckEnabled ? t('menu.viewHideSpelling') : t('menu.viewShowSpelling'), action: props.onToggleSpellcheck, icon: <ChecklistIcon isMenuIcon /> },
     ];
 
     const helpMenuItems: MenuItem[] = [

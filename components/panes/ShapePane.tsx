@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 
 interface ShapePaneProps {
@@ -35,6 +34,7 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
   const [styles, setStyles] = useState<React.CSSProperties>({});
   const [wrapping, setWrapping] = useState<'absolute' | 'left' | 'right'>('absolute');
   const shapeType = editingElement.dataset.shapeType;
+  const isLine = shapeType === 'line';
 
   const parseStyle = (value: string | undefined, defaultValue: number): number => {
     if (value === undefined) return defaultValue;
@@ -238,12 +238,12 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
                     <input type="number" value={parseStyle(styles.top as string, 0)} onChange={e => handleStyleChange({ top: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 disabled:opacity-50" disabled={wrapping !== 'absolute'}/>
                 </div>
                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.width')}</label>
+                    <label className="block text-xs text-gray-500 mb-1">{isLine ? t('panes.shape.length') : t('panes.shape.width')}</label>
                     <input type="number" value={parseStyle(styles.width as string, 100)} onChange={e => handleStyleChange({ width: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
                 </div>
                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.height')}</label>
-                    <input type="number" value={parseStyle(styles.height as string, 100)} onChange={e => handleStyleChange({ height: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
+                    <label className="block text-xs text-gray-500 mb-1">{isLine ? t('panes.shape.lineThickness') : t('panes.shape.height')}</label>
+                    <input type="number" value={parseStyle(styles.height as string, isLine ? 2 : 100)} onChange={e => handleStyleChange({ height: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
                 </div>
             </div>
             <div className="pt-2">
@@ -265,49 +265,53 @@ const ShapePane: React.FC<ShapePaneProps> = ({ editingElement, onUpdateStyle, on
             <summary className="font-medium cursor-pointer">{t('panes.shape.style')}</summary>
             <div className="space-y-2 pt-2">
                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.fillColor')}</label>
+                    <label className="block text-xs text-gray-500 mb-1">{isLine ? t('panes.shape.lineColor') : t('panes.shape.fillColor')}</label>
                     <input type="color" value={currentBgColor} onChange={e => handleStyleChange({ backgroundColor: e.target.value })} className="w-full h-8 p-0 border-none rounded-md cursor-pointer"/>
                 </div>
-                 <div>
-                    <label className="block text-xs text-gray-500 mb-1">{shapeType === 'textbox' ? t('panes.shape.bgOpacity') : t('panes.shape.opacity')}</label>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={currentOpacity}
-                        onChange={e => handleStyleChange({ opacity: e.target.value })}
-                        className="w-full"
-                    />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.borderColor')}</label>
-                        <input type="color" value={parseColor(styles.borderColor, '#000000')} onChange={e => handleStyleChange({ borderColor: e.target.value })} className="w-full h-8 p-0 border-none rounded-md cursor-pointer"/>
-                    </div>
-                     <div>
-                        <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.borderWidth')}</label>
-                        <input type="number" min="0" value={parseStyle(styles.borderWidth as string, 1)} onChange={e => handleStyleChange({ borderWidth: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
-                    </div>
-                </div>
-                <div>
-                     <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.borderStyle')}</label>
-                     <select
-                        value={styles.borderStyle}
-                        onChange={(e) => handleStyleChange({ borderStyle: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    >
-                        <option value="solid">{t('panes.shape.borderStyles.solid')}</option>
-                        <option value="dashed">{t('panes.shape.borderStyles.dashed')}</option>
-                        <option value="dotted">{t('panes.shape.borderStyles.dotted')}</option>
-                        <option value="none">{t('panes.shape.borderStyles.none')}</option>
-                    </select>
-                </div>
-                {(shapeType === 'rectangle' || shapeType === 'textbox') && (
-                    <div>
-                        <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.cornerRadius')}</label>
-                        <input type="number" min="0" value={parseStyle(styles.borderRadius as string, 0)} onChange={e => handleStyleChange({ borderRadius: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
-                    </div>
+                {!isLine && (
+                    <>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">{shapeType === 'textbox' ? t('panes.shape.bgOpacity') : t('panes.shape.opacity')}</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.05"
+                                value={currentOpacity}
+                                onChange={e => handleStyleChange({ opacity: e.target.value })}
+                                className="w-full"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.borderColor')}</label>
+                                <input type="color" value={parseColor(styles.borderColor, '#000000')} onChange={e => handleStyleChange({ borderColor: e.target.value })} className="w-full h-8 p-0 border-none rounded-md cursor-pointer"/>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.borderWidth')}</label>
+                                <input type="number" min="0" value={parseStyle(styles.borderWidth as string, 1)} onChange={e => handleStyleChange({ borderWidth: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.borderStyle')}</label>
+                            <select
+                                value={styles.borderStyle}
+                                onChange={(e) => handleStyleChange({ borderStyle: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            >
+                                <option value="solid">{t('panes.shape.borderStyles.solid')}</option>
+                                <option value="dashed">{t('panes.shape.borderStyles.dashed')}</option>
+                                <option value="dotted">{t('panes.shape.borderStyles.dotted')}</option>
+                                <option value="none">{t('panes.shape.borderStyles.none')}</option>
+                            </select>
+                        </div>
+                        {(shapeType === 'rectangle' || shapeType === 'textbox') && (
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">{t('panes.shape.cornerRadius')}</label>
+                                <input type="number" min="0" value={parseStyle(styles.borderRadius as string, 0)} onChange={e => handleStyleChange({ borderRadius: `${e.target.value}px` })} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"/>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </details>

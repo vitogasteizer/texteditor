@@ -1,7 +1,7 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
-// FIX: Removed `LiveSession` from import as it's not exported.
 import { GoogleGenAI, LiveServerMessage, Modality, Blob as GenAIBlob } from "@google/genai";
 import { CloseIcon, BotIcon, ImageIcon, MicIcon, SearchIcon, MapIcon, BrainCircuitIcon, SendIcon, StopCircleIcon, SparklesIcon } from './icons/EditorIcons';
 import type { ChatMessage } from '../App';
@@ -75,7 +75,6 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
     // Live state
     const [isLive, setIsLive] = useState(false);
     const [liveTranscript, setLiveTranscript] = useState<{ user: string, model: string} | null>(null);
-    // FIX: Using `any` for the session promise as `LiveSession` is not an exported type.
     const sessionRef = useRef<Promise<any> | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);

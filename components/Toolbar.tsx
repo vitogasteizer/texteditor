@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, TextShadowIcon, SparklesIcon, ChecklistIcon, ChevronRightIcon } from './icons/EditorIcons';
@@ -433,7 +435,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
     }, [editorRef, updateToolbarState]);
 
   const executeCommand = (command: string, value?: string) => {
-    editorRef.current?.focus();
     document.execCommand(command, false, value);
     updateToolbarState();
   };
@@ -476,7 +477,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
   };
   
   const applyTextShadow = (shadow: string) => {
-      editorRef.current?.focus();
       const parentSpan = getSelectionParentSpan('textShadow');
       if (parentSpan) {
           parentSpan.style.textShadow = shadow;
@@ -487,7 +487,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
   };
   
   const removeTextShadow = () => {
-      editorRef.current?.focus();
       const parentSpan = getSelectionParentSpan('textShadow');
       if (parentSpan) {
           parentSpan.style.textShadow = 'none';
@@ -503,7 +502,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
   };
   
   const applyFont = (family: string, weight?: number) => {
-    editorRef.current?.focus();
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
@@ -531,7 +529,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         const tempFontName = `__temp__${Date.now()}`;
         document.execCommand('fontName', false, tempFontName);
         
-        // FIX: Removed <HTMLElement> generic from querySelectorAll as it was causing an "Untyped function calls may not accept type arguments" error.
         const fontElements = editorRef.current?.querySelectorAll(`font[face="${tempFontName}"]`);
         
         fontElements?.forEach(fontElement => {
@@ -548,7 +545,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
   };
 
   const applyFontSize = (sizeInPt: number) => {
-    editorRef.current?.focus();
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
@@ -564,11 +560,9 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         selection.addRange(range);
     } else {
         document.execCommand('fontSize', false, '1'); // Use a placeholder size
-        // FIX: Removed <HTMLElement> generic from querySelectorAll as it was causing an "Untyped function calls may not accept type arguments" error.
         const fontElements = editorRef.current?.querySelectorAll('font[size="1"]');
         fontElements?.forEach(fontElement => {
             fontElement.removeAttribute('size');
-            // FIX: Cast to HTMLElement to access the style property since querySelectorAll without generics returns Element.
             (fontElement as HTMLElement).style.fontSize = `${sizeInPt}pt`;
         });
     }
@@ -577,7 +571,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
 
 
   const applyLineHeight = (value: string) => {
-      editorRef.current?.focus();
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
       

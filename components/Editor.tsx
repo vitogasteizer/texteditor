@@ -1,4 +1,5 @@
 
+
 import React, { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface EditorProps {
@@ -7,10 +8,12 @@ interface EditorProps {
   onMouseUp: () => void;
   onDoubleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  spellCheck: boolean;
 }
 
-const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onMouseUp, onDoubleClick, onClick }, ref) => {
-  const contentRef = ref || useRef<HTMLDivElement>(null);
+const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onMouseUp, onDoubleClick, onClick, spellCheck }, ref) => {
+  const internalRef = useRef<HTMLDivElement>(null);
+  const contentRef = ref || internalRef;
   
   // onInput is intentionally removed to let the browser handle its own undo/redo stack
   // for contentEditable elements. Changes are synced back to React state onBlur.
@@ -43,8 +46,7 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
         }
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content]); // Intentionally dependent only on content to react to external changes.
+  }, [content, contentRef]);
   
   return (
     <div
@@ -54,6 +56,7 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
       onDoubleClick={onDoubleClick}
       onClick={onClick}
       contentEditable={true}
+      spellCheck={spellCheck}
       suppressContentEditableWarning={true}
       className="relative min-h-full focus:outline-none prose dark:prose-invert max-w-none prose-a:text-blue-600 dark:prose-a:text-blue-400"
       // The initial content is set via useEffect to avoid hydration issues.

@@ -20,6 +20,7 @@ interface SettingsSidebarProps {
   onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
   onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
   onAiImageEdit: (prompt: string) => void;
+  onOpenCropModal: () => void;
   onTableAction: (action: 'addRowAbove' | 'addRowBelow' | 'deleteRow' | 'addColLeft' | 'addColRight' | 'deleteCol' | 'deleteTable' | 'mergeCells' | 'splitCell') => void;
   onTableStyle: (style: React.CSSProperties, applyTo: 'cell' | 'table') => void;
   t: (key: string) => string;
@@ -50,7 +51,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = (props) => {
             </header>
             <div className="flex-grow p-4 overflow-y-auto">
                 {activePanel === 'link' && <LinkPane onApplyLink={props.onApplyLink} onClose={onClose} editingElement={editingElement as HTMLAnchorElement | null} t={t} />}
-                {activePanel === 'image' && <ImagePane onApplyImageSettings={props.onApplyImageSettings} onClose={onClose} editingElement={editingElement as HTMLImageElement | null} onUpdateElementStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} onAiImageEdit={props.onAiImageEdit} t={t} />}
+                {activePanel === 'image' && <ImagePane onApplyImageSettings={props.onApplyImageSettings} onClose={onClose} editingElement={editingElement as HTMLImageElement | null} onUpdateElementStyle={props.onUpdateElementStyle} onChangeZIndex={props.onChangeZIndex} onAiImageEdit={props.onAiImageEdit} onOpenCropModal={props.onOpenCropModal} t={t} />}
                 {activePanel === 'table' && !editingElement && <TablePane onInsertTable={props.onInsertTable} t={t} />}
                 {activePanel === 'table' && editingElement && <EditTablePane editingElement={editingElement as HTMLTableElement} onTableAction={props.onTableAction} onTableStyle={props.onTableStyle} onChangeZIndex={props.onChangeZIndex} t={t} />}
                 {activePanel === 'findReplace' && <FindReplacePane onReplaceAll={props.onReplaceAll} t={t} />}

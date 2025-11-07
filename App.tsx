@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import Toolbar from './components/Toolbar';
@@ -21,6 +20,9 @@ import PageSetupModal from './components/PageSetupModal';
 import DocumentPreviewModal from './components/DocumentPreviewModal';
 import AboutModal from './components/AboutModal';
 import ShortcutsSidebar from './components/ShortcutsSidebar';
+import ImportModal from './components/ImportModal';
+import DrawingModal from './components/DrawingModal';
+import CropModal from './components/CropModal';
 import { translations, Language } from './lib/translations';
 
 
@@ -70,7 +72,7 @@ interface CopiedFormatting {
   strikethrough: boolean;
 }
 
-export type ShapeType = 'textbox' | 'rectangle' | 'circle' | 'triangle';
+export type ShapeType = 'textbox' | 'rectangle' | 'circle' | 'triangle' | 'line';
 export type ActivePanel = 'link' | 'image' | 'table' | 'findReplace' | 'shape' | null;
 
 export interface ImageOptions {
@@ -145,6 +147,12 @@ const App: React.FC = () => {
   const [previewDocContent, setPreviewDocContent] = useState('');
   const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
   const [isShortcutsSidebarVisible, setIsShortcutsSidebarVisible] = useState(false);
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+  const [isDrawingModalVisible, setIsDrawingModalVisible] = useState(false);
+  const [editingDrawingElement, setEditingDrawingElement] = useState<HTMLImageElement | null>(null);
+  const [isCropModalVisible, setIsCropModalVisible] = useState(false);
+  const [croppingImageElement, setCroppingImageElement] = useState<HTMLImageElement | null>(null);
+
   const [toast, setToast] = useState<string | null>(null);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -157,6 +165,7 @@ const App: React.FC = () => {
 
   const [isFormatPainterActive, setIsFormatPainterActive] = useState(false);
   const [copiedFormatting, setCopiedFormatting] = useState<CopiedFormatting | null>(null);
+  const [isSpellcheckEnabled, setIsSpellcheckEnabled] = useState(false);
 
   const [pageSize, setPageSize] = useState<PageSize>('Letter');
   const [pageOrientation, setPageOrientation] = useState<PageOrientation>('portrait');
@@ -501,6 +510,53 @@ const App: React.FC = () => {
     }
   };
 
+  const handleExportAllDocuments = () => {
+    try {
+        const dataStr = JSON.stringify(documents, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const exportFileDefaultName = 'editor-backup.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    } catch (error) {
+        console.error("Failed to export documents:", error);
+        setToast(t('toasts.docsImportedError')); // Re-use error toast
+    }
+  };
+
+  const handleImportAllDocuments = (jsonContent: string) => {
+    try {
+        const importedDocs: Doc[] = JSON.parse(jsonContent);
+
+        if (!Array.isArray(importedDocs)) {
+            throw new Error("Invalid format: Not an array.");
+        }
+        
+        let newDocsCount = 0;
+        setDocuments(currentDocs => {
+            const currentDocIds = new Set(currentDocs.map(d => d.id));
+            const docsToAdd = importedDocs.filter(importedDoc => {
+                if (typeof importedDoc.id !== 'string' || typeof importedDoc.name !== 'string' || typeof importedDoc.content !== 'string') {
+                    return false; // Basic validation
+                }
+                return !currentDocIds.has(importedDoc.id);
+            });
+            newDocsCount = docsToAdd.length;
+            return [...currentDocs, ...docsToAdd];
+        });
+
+        if (newDocsCount > 0) {
+            setToast(t('toasts.docsImportedSuccess', { count: newDocsCount }));
+        } else {
+            setToast(t('toasts.docsImportedNothingNew'));
+        }
+    } catch (error) {
+        console.error("Failed to import documents:", error);
+        setToast(t('toasts.docsImportedError'));
+    }
+  };
+
   const handleExportToWord = () => {
     const editorContent = editorRef.current?.innerHTML;
     if (!editorContent) return;
@@ -720,10 +776,11 @@ const App: React.FC = () => {
     let shapeHtml = '';
 
     const defaultStyles = `position: absolute; top: 100px; left: 100px; z-index: 1;`;
+    const placeholderText = t('panes.shape.typeHere');
 
     switch (shapeType) {
         case 'textbox':
-            shapeHtml = `<div id="${id}" data-shape-type="textbox" style="${defaultStyles} width: 150px; height: 50px; border: 1px solid black; padding: 5px; background-color: rgba(255, 255, 255, 1);" contenteditable="false"><div contenteditable="true" style="color: black;">Type here...</div></div>`;
+            shapeHtml = `<div id="${id}" data-shape-type="textbox" style="${defaultStyles} width: 150px; height: 50px; border: 1px solid black; padding: 5px; background-color: rgba(255, 255, 255, 1);" contenteditable="false"><div contenteditable="true" style="color: black; border: none; outline: none; min-height: 1em; height: 100%;">${placeholderText}</div></div>`;
             break;
         case 'rectangle':
             shapeHtml = `<div id="${id}" data-shape-type="rectangle" style="${defaultStyles} width: 100px; height: 60px; background-color: #dde; border: 1px solid #333;" contenteditable="false"></div>`;
@@ -734,6 +791,9 @@ const App: React.FC = () => {
         case 'triangle':
             shapeHtml = `<div id="${id}" data-shape-type="triangle" style="${defaultStyles} width: 80px; height: 80px; background-color: #dde; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);" contenteditable="false"></div>`;
             break;
+        case 'line':
+            shapeHtml = `<div id="${id}" data-shape-type="line" style="${defaultStyles} width: 100px; height: 2px; background-color: #333; transform-origin: center;" contenteditable="false"></div>`;
+            break;
     }
 
     if (editorRef.current) {
@@ -742,6 +802,17 @@ const App: React.FC = () => {
       if (newShape) {
         newShape.removeAttribute('id');
         setSelectedElement(newShape);
+        if (shapeType === 'textbox') {
+            const innerDiv = newShape.querySelector('[contenteditable="true"]') as HTMLElement;
+            if (innerDiv) {
+                innerDiv.focus();
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(innerDiv);
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+            }
+        }
       }
     }
   };
@@ -1032,15 +1103,19 @@ const App: React.FC = () => {
         Object.assign(editingElement.style, style);
         // Apply to all cells too for borders
         if(style.borderColor || style.borderWidth) {
-          editingElement.querySelectorAll<HTMLElement>('td, th').forEach((cell) => {
-            if(style.borderColor) cell.style.borderColor = style.borderColor as string;
-            if(style.borderWidth) cell.style.borderWidth = style.borderWidth as string;
+          const cells = editingElement.querySelectorAll('td, th');
+          cells.forEach((cell) => {
+            if(style.borderColor) (cell as HTMLElement).style.borderColor = style.borderColor as string;
+            if(style.borderWidth) (cell as HTMLElement).style.borderWidth = style.borderWidth as string;
           });
         }
     } else {
         const selection = getCurrentTableSelection();
-        if (selection) {
-            Object.assign(selection.cell.style, style);
+        if (selection && selection.cell) {
+            // FIX: Cast selection.cell to HTMLElement to access style property.
+            // The return type of `closest()` is `Element | null`, which does not have a `style` property.
+            // Table cells are HTMLElements, so this cast is safe.
+            Object.assign((selection.cell as HTMLElement).style, style);
         } else {
             setToast(t('toasts.tableActionContext'));
         }
@@ -1252,6 +1327,15 @@ const App: React.FC = () => {
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+    const drawing = target.closest('img[data-drawing="true"]') as HTMLImageElement;
+
+    if (drawing) {
+      e.preventDefault();
+      setEditingDrawingElement(drawing);
+      setIsDrawingModalVisible(true);
+      return;
+    }
+    
     if (openPanelForElement(target)) {
       e.preventDefault();
     }
@@ -1470,7 +1554,7 @@ const App: React.FC = () => {
               if (part.inlineData) {
                 const base64ImageBytes: string = part.inlineData.data;
                 const newSrc = `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
-                imageElement.style.backgroundColor = 'transparent';
+                (imageElement as HTMLElement).style.backgroundColor = 'transparent';
                 imageElement.src = newSrc;
                 handleContentChange(editorRef.current!.innerHTML);
                 setToast(t('toasts.aiImageEdited'));
@@ -1485,6 +1569,93 @@ const App: React.FC = () => {
     } finally {
         setIsAnalyzing(false);
     }
+  };
+
+  const handleOcrImport = async (base64Image: string) => {
+    if (!checkAiAvailability()) return;
+
+    setIsImportModalVisible(false);
+    setIsAnalyzing(true);
+    setToast(t('toasts.ocrInProgress'));
+
+    try {
+        const imagePart = {
+            inlineData: {
+                data: base64Image.split(',')[1],
+                mimeType: base64Image.match(/data:([^;]+);/)?.[1] || 'image/jpeg',
+            },
+        };
+        const textPart = { text: "Extract all text from this image, preserving line breaks." };
+
+        const response = await aiRef.current!.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts: [imagePart, textPart] },
+        });
+        
+        const extractedText = response.text;
+
+        const htmlText = extractedText
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;")
+            .split('\n').map(p => `<p>${p || '<br>'}</p>`).join('');
+
+        restoreSelection();
+        document.execCommand('insertHTML', false, htmlText);
+        if (editorRef.current) {
+            handleContentChange(editorRef.current.innerHTML);
+        }
+        setToast(t('toasts.ocrComplete'));
+    } catch (error) {
+        console.error("OCR failed:", error);
+        setToast(t('toasts.aiError'));
+    } finally {
+        setIsAnalyzing(false);
+    }
+  };
+
+  const handleSaveDrawing = (imageDataUrl: string) => {
+    if (editingDrawingElement) {
+        editingDrawingElement.src = imageDataUrl;
+        handleContentChange(editorRef.current!.innerHTML);
+    } else {
+        restoreSelection();
+        const id = `drawing-${Date.now()}`;
+        const imageHtml = `<img id="${id}" src="${imageDataUrl}" data-drawing="true" style="display: inline-block; max-width: 100%;" />`;
+        document.execCommand('insertHTML', false, imageHtml);
+        const newImg = editorRef.current?.querySelector(`#${id}`) as HTMLImageElement;
+        if (newImg) newImg.removeAttribute('id');
+    }
+    setIsDrawingModalVisible(false);
+    setEditingDrawingElement(null);
+  };
+
+  const handleOpenCropModal = () => {
+    if (editingElement && editingElement.tagName === 'IMG') {
+        setCroppingImageElement(editingElement as HTMLImageElement);
+        setIsCropModalVisible(true);
+    }
+  };
+
+  const handleApplyCrop = (dataUrl: string, newWidth: number, newHeight: number) => {
+    if (croppingImageElement) {
+        croppingImageElement.src = dataUrl;
+        
+        const currentWidth = croppingImageElement.offsetWidth;
+        const newAspectRatio = newWidth / newHeight;
+        const newDisplayHeight = currentWidth / newAspectRatio;
+
+        croppingImageElement.style.width = `${currentWidth}px`;
+        croppingImageElement.style.height = `${newDisplayHeight}px`;
+        
+        if (editorRef.current) {
+            handleContentChange(editorRef.current.innerHTML);
+        }
+    }
+    setIsCropModalVisible(false);
+    setCroppingImageElement(null);
   };
 
 
@@ -1580,6 +1751,10 @@ const App: React.FC = () => {
                   onSetLanguage={setLanguage}
                   onReadAloud={handleReadAloud}
                   isReadingAloud={isReadingAloud}
+                  onToggleSpellcheck={() => setIsSpellcheckEnabled(prev => !prev)}
+                  isSpellcheckEnabled={isSpellcheckEnabled}
+                  onOpenFileImport={() => { saveSelection(); setIsImportModalVisible(true); }}
+                  onInsertDrawing={() => { saveSelection(); setIsDrawingModalVisible(true); setEditingDrawingElement(null); }}
                   t={t}
                 />
                 <Toolbar 
@@ -1619,11 +1794,11 @@ const App: React.FC = () => {
                               onMouseUp={handleEditorMouseUp}
                               onDoubleClick={handleDoubleClick}
                               onClick={handleClick}
+                              spellCheck={isSpellcheckEnabled}
                             />
-                            {selectedElement && editorRef.current && (
+                            {selectedElement && (
                                 <ObjectWrapper 
                                     targetElement={selectedElement}
-                                    containerRef={editorRef}
                                     onUpdate={handleUpdateElementStyle}
                                     onDeselect={() => setSelectedElement(null)}
                                     onDoubleClick={(e) => {
@@ -1662,6 +1837,7 @@ const App: React.FC = () => {
                             onUpdateElementStyle={handleUpdateElementStyle}
                             onChangeZIndex={handleChangeZIndex}
                             onAiImageEdit={(prompt) => handleAiImageEdit(prompt, editingElement as HTMLImageElement)}
+                            onOpenCropModal={handleOpenCropModal}
                             onTableAction={handleTableAction}
                             onTableStyle={handleTableStyle}
                             t={t}
@@ -1701,6 +1877,8 @@ const App: React.FC = () => {
           onPreviewDocument={handlePreviewDocument}
           onCreateNewDocument={handleNewDocument}
           onClose={() => setView('editor')}
+          onExportAllDocuments={handleExportAllDocuments}
+          onImportAllDocuments={handleImportAllDocuments}
           currentDocId={currentDocId}
           t={t}
         />
@@ -1764,6 +1942,32 @@ const App: React.FC = () => {
         isOpen={isAboutModalVisible} 
         onClose={() => setIsAboutModalVisible(false)} 
         t={t} 
+      />
+      <ImportModal 
+        isOpen={isImportModalVisible} 
+        onClose={() => setIsImportModalVisible(false)} 
+        onImport={handleOcrImport} 
+        t={t} 
+      />
+      <DrawingModal
+        isOpen={isDrawingModalVisible}
+        onClose={() => {
+            setIsDrawingModalVisible(false);
+            setEditingDrawingElement(null);
+        }}
+        onSave={handleSaveDrawing}
+        initialDataUrl={editingDrawingElement?.src}
+        t={t}
+      />
+      <CropModal
+        isOpen={isCropModalVisible}
+        onClose={() => {
+            setIsCropModalVisible(false);
+            setCroppingImageElement(null);
+        }}
+        onApply={handleApplyCrop}
+        imageSrc={croppingImageElement?.src || null}
+        t={t}
       />
     </div>
   );

@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ImageOptions } from '../../App';
-import { SparklesIcon } from '../icons/EditorIcons';
+import { SparklesIcon, ScissorsIcon } from '../icons/EditorIcons';
 
 interface ImagePaneProps {
   onApplyImageSettings: (options: ImageOptions, elementToUpdate: HTMLImageElement | null, keepPanelOpen?: boolean) => void;
@@ -10,6 +9,7 @@ interface ImagePaneProps {
   onUpdateElementStyle: (element: HTMLElement, styles: React.CSSProperties) => void;
   onChangeZIndex: (element: HTMLElement, direction: 'front' | 'back') => void;
   onAiImageEdit: (prompt: string) => void;
+  onOpenCropModal: () => void;
   t: (key: string) => string;
 }
 
@@ -51,7 +51,7 @@ const parseBoxShadow = (boxShadow: string | undefined): ShadowState => {
       };
 };
 
-const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElement, onUpdateElementStyle, onChangeZIndex, onAiImageEdit, t }) => {
+const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElement, onUpdateElementStyle, onChangeZIndex, onAiImageEdit, onOpenCropModal, t }) => {
     const [sourceType, setSourceType] = useState<'url' | 'upload'>('url');
     const [url, setUrl] = useState('');
     const [fileSrc, setFileSrc] = useState('');
@@ -175,22 +175,28 @@ const ImagePane: React.FC<ImagePaneProps> = ({ onApplyImageSettings, editingElem
         <div className="space-y-4 text-sm">
             {isEditing && (
                 <details className="space-y-2" open>
-                    <summary className="font-medium cursor-pointer">{t('panes.image.aiEdit')}</summary>
-                    <div className="pt-2">
-                        <label htmlFor="ai-image-edit" className="block text-xs text-gray-500 mb-1">{t('panes.image.aiEditPrompt')}</label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                id="ai-image-edit"
-                                value={aiEditPrompt}
-                                onChange={e => setAiEditPrompt(e.target.value)}
-                                placeholder={t('panes.image.aiEditPlaceholder')}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAiEdit()}
-                                className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700"
-                            />
-                            <button onClick={handleAiEdit} className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50" disabled={!aiEditPrompt.trim()}>
-                                <SparklesIcon />
-                            </button>
+                    <summary className="font-medium cursor-pointer">{t('panes.image.actions')}</summary>
+                    <div className="pt-2 space-y-3">
+                        <button onClick={onOpenCropModal} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">
+                            <ScissorsIcon className="w-4 h-4" />
+                            <span>{t('panes.image.cropImage')}</span>
+                        </button>
+                        <div>
+                            <label htmlFor="ai-image-edit" className="block text-xs text-gray-500 mb-1">{t('panes.image.aiEdit')}</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="ai-image-edit"
+                                    value={aiEditPrompt}
+                                    onChange={e => setAiEditPrompt(e.target.value)}
+                                    placeholder={t('panes.image.aiEditPlaceholder')}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAiEdit()}
+                                    className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700"
+                                />
+                                <button onClick={handleAiEdit} className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50" disabled={!aiEditPrompt.trim()}>
+                                    <SparklesIcon />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </details>
