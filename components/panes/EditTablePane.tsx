@@ -24,12 +24,12 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
         const selection = window.getSelection();
         // Fix: The check for selection.anchorNode was not correctly narrowing its type.
         // Storing it in a variable first helps TypeScript's type inference.
-        if (!selection || !selection.rangeCount || !selection.anchorNode) {
+        const anchorNode = selection?.anchorNode;
+        if (!selection || !selection.rangeCount || !anchorNode) {
             setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
             return;
         }
 
-        const anchorNode = selection.anchorNode;
         if (!editingElement.contains(anchorNode)) {
             setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
             return;
