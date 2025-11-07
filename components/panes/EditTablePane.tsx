@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2Icon, RowInsertTopIcon, RowInsertBottomIcon, ColumnInsertLeftIcon, ColumnInsertRightIcon, MergeCellsIcon, SplitCellIcon } from '../icons/EditorIcons';
 
@@ -31,15 +22,22 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
 
     const checkSelectionState = useCallback(() => {
         const selection = window.getSelection();
-        if (!selection || !selection.rangeCount || !selection.anchorNode || !editingElement.contains(selection.anchorNode)) {
+        // Fix: The check for selection.anchorNode was not correctly narrowing its type.
+        // Storing it in a variable first helps TypeScript's type inference.
+        if (!selection || !selection.rangeCount || !selection.anchorNode) {
+            setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
+            return;
+        }
+
+        const anchorNode = selection.anchorNode;
+        if (!editingElement.contains(anchorNode)) {
             setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
             return;
         }
 
         const selectedCells: HTMLTableCellElement[] = [];
         const cells = editingElement.querySelectorAll('td, th');
-        // FIX: Use forEach for better type inference on NodeListOf.
-        cells.forEach(cell => {
+        Array.from(cells).forEach(cell => {
             if (selection.containsNode(cell, true)) {
                 selectedCells.push(cell as HTMLTableCellElement);
             }

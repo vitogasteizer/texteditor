@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import Toolbar from './components/Toolbar';
@@ -174,7 +175,7 @@ const App: React.FC = () => {
 
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
-  const autoSaveTimerRef = useRef<number | null>(null);
+  const debouncedSaveRef = useRef<number | null>(null);
   const aiRef = useRef<GoogleGenAI | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -241,43 +242,47 @@ const App: React.FC = () => {
     setWordCountStats({ words, characters });
   }, []);
 
+  const saveDocumentChanges = useCallback(() => {
+      if (!currentDocId) return;
 
-  // Auto-save effect
+      setIsSaving(true);
+      const docToSave: Partial<Doc> = {
+          content: editorRef.current?.innerHTML || content,
+          comments,
+          updatedAt: Date.now(),
+          pageSize,
+          pageOrientation,
+          pageMargins,
+          pageColor,
+      };
+      setDocuments(docs =>
+          docs.map(doc =>
+              doc.id === currentDocId
+                  ? { ...doc, ...docToSave }
+                  : doc
+          )
+      );
+      setLastSaved(Date.now());
+      setTimeout(() => setIsSaving(false), 500);
+  }, [content, comments, currentDocId, pageColor, pageMargins, pageOrientation, pageSize]);
+
+  // Debounced auto-save effect
   useEffect(() => {
-    if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-    }
-
     if (currentDocId) {
-        autoSaveTimerRef.current = window.setTimeout(() => {
-            setIsSaving(true);
-            const docToSave: Partial<Doc> = {
-                content: editorRef.current?.innerHTML || content,
-                comments,
-                updatedAt: Date.now(),
-                pageSize,
-                pageOrientation,
-                pageMargins,
-                pageColor,
-            };
-            setDocuments(docs =>
-                docs.map(doc =>
-                    doc.id === currentDocId
-                        ? { ...doc, ...docToSave }
-                        : doc
-                )
-            );
-            setLastSaved(Date.now());
-            setTimeout(() => setIsSaving(false), 500);
+        if (debouncedSaveRef.current) {
+            clearTimeout(debouncedSaveRef.current);
+        }
+        debouncedSaveRef.current = window.setTimeout(() => {
+            saveDocumentChanges();
         }, AUTOSAVE_INTERVAL);
     }
     
     return () => {
-        if (autoSaveTimerRef.current) {
-            clearTimeout(autoSaveTimerRef.current);
+        if (debouncedSaveRef.current) {
+            clearTimeout(debouncedSaveRef.current);
         }
     };
-  }, [content, comments, currentDocId, pageSize, pageOrientation, pageMargins, pageColor]);
+  }, [content, comments, currentDocId, saveDocumentChanges]);
 
   // Format painter cursor effect
   useEffect(() => {
@@ -1112,9 +1117,6 @@ const App: React.FC = () => {
     } else {
         const selection = getCurrentTableSelection();
         if (selection && selection.cell) {
-            // FIX: Cast selection.cell to HTMLElement to access style property.
-            // The return type of `closest()` is `Element | null`, which does not have a `style` property.
-            // Table cells are HTMLElements, so this cast is safe.
             Object.assign((selection.cell as HTMLElement).style, style);
         } else {
             setToast(t('toasts.tableActionContext'));
@@ -1266,6 +1268,11 @@ const App: React.FC = () => {
 
   const handleEditorMouseUp = () => {
     handlePasteFormatting();
+    
+    if (window.innerWidth < 768) { // Don't show on mobile
+      setFloatingToolbar(null);
+      return;
+    }
 
     // Add a small delay to allow the selection to be updated in the DOM
     setTimeout(() => {

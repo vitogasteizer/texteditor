@@ -1,5 +1,6 @@
 
 
+
 import React, { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface EditorProps {
@@ -15,15 +16,9 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
   const internalRef = useRef<HTMLDivElement>(null);
   const contentRef = ref || internalRef;
   
-  // onInput is intentionally removed to let the browser handle its own undo/redo stack
-  // for contentEditable elements. Changes are synced back to React state onBlur.
-
-  const handleBlur = useCallback(() => {
-    const editor = contentRef && 'current' in contentRef ? contentRef.current : null;
-    if (editor && editor.innerHTML !== content) {
-      onChange(editor.innerHTML);
-    }
-  }, [content, onChange, contentRef]);
+  const handleInput = useCallback((event: React.FormEvent<HTMLDivElement>) => {
+    onChange(event.currentTarget.innerHTML);
+  }, [onChange]);
 
   useEffect(() => {
     const editor = contentRef && 'current' in contentRef ? contentRef.current : null;
@@ -51,7 +46,7 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ content, onChange, onM
   return (
     <div
       ref={contentRef}
-      onBlur={handleBlur}
+      onInput={handleInput}
       onMouseUp={onMouseUp}
       onDoubleClick={onDoubleClick}
       onClick={onClick}

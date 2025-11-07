@@ -52,10 +52,10 @@ export const RedoIcon: React.FC<{isMenuIcon?: boolean; className?: string}> = ({
 );
 export const ClearFormattingIcon: React.FC = () => (
     <svg {...iconProps} viewBox="0 0 24 24">
-        <path d="M4 7V4h16v3"/>
-        <path d="M5 20h14"/>
-        <path d="M12 4v16"/>
-        <line x1="21" y1="4" x2="3" y2="20"/>
+        <path d="M7 20v-8.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5V20"/>
+        <path d="M12 11.5h-5"/>
+        <path d="M14 16l6-6"/>
+        <path d="M20 16l-6-6"/>
     </svg>
 );
 export const MenuIcon: React.FC = () => (

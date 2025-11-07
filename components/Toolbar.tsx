@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, ListOrderedIcon, ListUnorderedIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, UndoIcon, RedoIcon, ClearFormattingIcon, ChevronDownIcon, TextColorIcon, BgColorIcon, LineHeightIcon, PaintBrushIcon, TextShadowIcon, SparklesIcon, ChecklistIcon, ChevronRightIcon } from './icons/EditorIcons';
@@ -52,7 +51,7 @@ const ToolbarButton: React.FC<{ onAction: (e: React.MouseEvent<HTMLButtonElement
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => { e.preventDefault(); onAction(e); };
   return (
     <div className="relative group">
-      <button ref={buttonRef} onMouseDown={handleMouseDown} className={`p-2 rounded-md transition-colors duration-150 ${isActive ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-200 dark:hover:bg-gray-600'} focus:outline-none focus:ring-2 focus:ring-blue-500`}>
+      <button ref={buttonRef} onMouseDown={handleMouseDown} aria-label={tooltip} className={`p-2 rounded-md transition-colors duration-150 ${isActive ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-200 dark:hover:bg-gray-600'} focus:outline-none focus:ring-2 focus:ring-blue-500`}>
         {children}
       </button>
       <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-700 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
@@ -242,7 +241,7 @@ const ColorPicker: React.FC<{ onAction: (color: string) => void; tooltip: string
     const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => { e.preventDefault(); inputRef.current?.click(); };
     return (
         <div className="relative group">
-            <button onMouseDown={handleButtonClick} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150">
+            <button onMouseDown={handleButtonClick} aria-label={tooltip} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150">
                 {children}
             </button>
             <input type="color" ref={inputRef} onChange={handleColorChange} className="absolute w-0 h-0 opacity-0" />
@@ -390,7 +389,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         if (element?.nodeType !== Node.ELEMENT_NODE) {
             element = element?.parentElement;
         }
-        if (!element) return;
+        if (!element || !editorRef.current.contains(element)) return;
         
         const styles = window.getComputedStyle(element as Element);
         const fontName = styles.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Arial';
@@ -435,140 +434,70 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
     }, [editorRef, updateToolbarState]);
 
   const executeCommand = (command: string, value?: string) => {
+    if (editorRef.current && document.activeElement !== editorRef.current) {
+      editorRef.current.focus();
+    }
     document.execCommand(command, false, value);
-    updateToolbarState();
+    setTimeout(updateToolbarState, 0);
   };
 
-  const wrapSelectionWithSpan = (style: Partial<CSSStyleDeclaration>): HTMLSpanElement | null => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
-    const range = selection.getRangeAt(0);
-    const span = document.createElement('span');
-    Object.assign(span.style, style);
-
-    try {
-        const fragment = range.extractContents();
-        span.appendChild(fragment);
-        range.insertNode(span);
-        selection.removeAllRanges();
-        const newRange = document.createRange();
-        newRange.selectNode(span);
-        selection.addRange(newRange);
-        return span;
-    } catch (e) {
-        // This can fail with complex selections (e.g. across table cells).
-        // A more robust implementation would walk the DOM nodes in the range.
-        console.error("Could not wrap selection:", e);
-        return null;
-    }
-  };
-
-  const getSelectionParentSpan = (styleProp: keyof CSSStyleDeclaration): HTMLSpanElement | null => {
+  const applyInlineStyle = (style: React.CSSProperties) => {
       const selection = window.getSelection();
-      if (!selection || !selection.anchorNode) return null;
-      let parent = selection.anchorNode.parentElement;
-      while (parent && parent !== editorRef.current) {
-          if (parent.nodeName === 'SPAN' && parent.style[styleProp]) {
-              return parent;
-          }
-          parent = parent.parentElement;
-      }
-      return null;
-  };
-  
-  const applyTextShadow = (shadow: string) => {
-      const parentSpan = getSelectionParentSpan('textShadow');
-      if (parentSpan) {
-          parentSpan.style.textShadow = shadow;
-      } else {
-          wrapSelectionWithSpan({ textShadow: shadow });
-      }
-      updateToolbarState();
-  };
-  
-  const removeTextShadow = () => {
-      const parentSpan = getSelectionParentSpan('textShadow');
-      if (parentSpan) {
-          parentSpan.style.textShadow = 'none';
-          if (!parentSpan.getAttribute('style')) {
-              const parent = parentSpan.parentNode;
-              while (parentSpan.firstChild) {
-                  parent?.insertBefore(parentSpan.firstChild, parentSpan);
-              }
-              parent?.removeChild(parentSpan);
-          }
-      }
-      updateToolbarState();
-  };
-  
-  const applyFont = (family: string, weight?: number) => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
+      if (!selection || selection.rangeCount === 0) return;
 
-    const newStyles: Partial<CSSStyleDeclaration> = { fontFamily: family };
+      const range = selection.getRangeAt(0);
+
+      if (range.collapsed) {
+          const span = document.createElement('span');
+          Object.assign(span.style, style);
+          span.innerHTML = '&#8203;'; // Zero-width space for cursor placement
+          range.insertNode(span);
+          range.setStart(span, 1);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          return;
+      }
+
+      const propsToClean = Object.keys(style).map(key => key.replace(/([A-Z])/g, "-$1").toLowerCase());
+      
+      const contents = range.extractContents();
+      
+      const cleaner = (node: Node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as HTMLElement;
+              propsToClean.forEach(prop => el.style.removeProperty(prop));
+              if (el.style.length === 0) el.removeAttribute('style');
+              Array.from(el.childNodes).forEach(cleaner);
+          }
+      };
+
+      cleaner(contents);
+
+      const wrapperSpan = document.createElement('span');
+      Object.assign(wrapperSpan.style, style);
+      wrapperSpan.appendChild(contents);
+      range.insertNode(wrapperSpan);
+      
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(wrapperSpan);
+      selection.addRange(newRange);
+  };
+
+  const applyFontFamily = (family: string, weight?: number) => {
+    const style: React.CSSProperties = { fontFamily: family };
     if (weight) {
-        newStyles.fontWeight = String(weight);
-    } else {
-        // Reset weight if not specified for this font family
-        newStyles.fontWeight = '';
+      style.fontWeight = weight;
     }
-
-    if (range.collapsed) {
-        const span = document.createElement('span');
-        Object.assign(span.style, newStyles);
-        span.innerHTML = '&#8203;'; // Zero-width space
-        range.insertNode(span);
-        range.setStart(span, 1);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    } else {
-        // Use execCommand as a robust way to wrap content, even across block nodes.
-        // We use a temporary, unique font name to find the elements later.
-        const tempFontName = `__temp__${Date.now()}`;
-        document.execCommand('fontName', false, tempFontName);
-        
-        const fontElements = editorRef.current?.querySelectorAll(`font[face="${tempFontName}"]`);
-        
-        fontElements?.forEach(fontElement => {
-            const span = document.createElement('span');
-            Object.assign(span.style, newStyles);
-            
-            while(fontElement.firstChild) {
-                span.appendChild(fontElement.firstChild);
-            }
-            fontElement.parentNode?.replaceChild(span, fontElement);
-        });
-    }
-    requestAnimationFrame(updateToolbarState);
+    applyInlineStyle(style);
+    setTimeout(updateToolbarState, 0);
   };
 
   const applyFontSize = (sizeInPt: number) => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-
-    if (range.collapsed) {
-        const span = document.createElement('span');
-        span.style.fontSize = `${sizeInPt}pt`;
-        span.innerHTML = '&#8203;'; // Zero-width space
-        range.insertNode(span);
-        range.setStart(span, 1);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    } else {
-        document.execCommand('fontSize', false, '1'); // Use a placeholder size
-        const fontElements = editorRef.current?.querySelectorAll('font[size="1"]');
-        fontElements?.forEach(fontElement => {
-            fontElement.removeAttribute('size');
-            (fontElement as HTMLElement).style.fontSize = `${sizeInPt}pt`;
-        });
-    }
-    requestAnimationFrame(updateToolbarState);
+    applyInlineStyle({ fontSize: `${sizeInPt}pt` });
+    setTimeout(updateToolbarState, 0);
   };
-
 
   const applyLineHeight = (value: string) => {
       const selection = window.getSelection();
@@ -584,7 +513,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
           while (current && current !== editorRef.current) {
               if (current.nodeType === Node.ELEMENT_NODE) {
                   const display = window.getComputedStyle(current as HTMLElement).display;
-                  if (display.includes('block')) {
+                  if (['block', 'list-item', 'table-cell', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes((current as HTMLElement).tagName.toLowerCase()) || ['block', 'list-item', 'table-cell'].includes(display)) {
                       parents.push(current as HTMLElement);
                   }
               }
@@ -592,12 +521,21 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
           }
           return parents;
       };
+      
+      const startBlock = getBlockParents(range.startContainer)[0];
+      const endBlock = getBlockParents(range.endContainer)[0];
 
-      const blockParents = getBlockParents(commonAncestor);
-      if (blockParents.length > 0) {
-          blockParents.forEach(p => p.style.lineHeight = value);
+      if(startBlock) {
+          let currentBlock: HTMLElement | null = startBlock;
+          const blocksToModify: HTMLElement[] = [];
+          while(currentBlock && currentBlock !== endBlock?.nextElementSibling) {
+              if(editorRef.current?.contains(currentBlock)) {
+                  blocksToModify.push(currentBlock);
+              }
+              currentBlock = currentBlock.nextElementSibling as HTMLElement | null;
+          }
+          blocksToModify.forEach(block => block.style.lineHeight = value);
       } else {
-         // If no block parent is found, wrap the current paragraph
          document.execCommand('formatBlock', false, 'p');
          const newParentBlock = selection.getRangeAt(0).commonAncestorContainer.parentElement;
          if (newParentBlock && newParentBlock instanceof HTMLElement) {
@@ -614,7 +552,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
 
   return (
     <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-      <div className="flex-1 min-w-0 flex items-center flex-wrap gap-1">
+      <div className="flex-1 min-w-0 flex items-center flex-nowrap gap-1 overflow-x-auto md:overflow-visible">
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
           <ToolbarButton onAction={() => executeCommand('undo')} tooltip={t('toolbar.undo')}><UndoIcon /></ToolbarButton>
           <ToolbarButton onAction={() => executeCommand('redo')} tooltip={t('toolbar.redo')}><RedoIcon /></ToolbarButton>
@@ -622,7 +560,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
         </div>
         
         <div className="flex items-center gap-2 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-           <FontFamilyDropdown label={fontLabel} items={fontFamilies} onSelect={applyFont} />
+           <FontFamilyDropdown label={fontLabel} items={fontFamilies} onSelect={applyFontFamily} />
            <FontSizeCombobox value={toolbarState.fontSize} onChange={applyFontSize} />
         </div>
 
@@ -632,17 +570,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
           <ToolbarButton onAction={() => executeCommand('underline')} tooltip={t('toolbar.underline')} isActive={toolbarState.underline}><UnderlineIcon /></ToolbarButton>
           <ToolbarButton onAction={() => executeCommand('strikethrough')} tooltip={t('toolbar.strikethrough')} isActive={toolbarState.strikethrough}><StrikethroughIcon /></ToolbarButton>
         </div>
-        
-        <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
-            <ColorPicker onAction={(color) => executeCommand('foreColor', color)} tooltip={t('toolbar.textColor')}><TextColorIcon /></ColorPicker>
-            <ColorPicker onAction={(color) => executeCommand('hiliteColor', color)} tooltip={t('toolbar.bgColor')}><BgColorIcon /></ColorPicker>
-            <ToolbarButton buttonRef={textShadowButtonRef} onAction={() => setIsTextShadowDropdownOpen(true)} tooltip={t('toolbar.textShadow')} isActive={toolbarState.textShadow !== 'none'}><TextShadowIcon /></ToolbarButton>
-        </div>
 
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
           <ToolbarButton onAction={() => executeCommand('insertUnorderedList')} tooltip={t('toolbar.bulletedList')} isActive={toolbarState.ul}><ListUnorderedIcon /></ToolbarButton>
           <ToolbarButton onAction={() => executeCommand('insertOrderedList')} tooltip={t('toolbar.numberedList')} isActive={toolbarState.ol}><ListOrderedIcon /></ToolbarButton>
           <ToolbarButton onAction={onInsertChecklist} tooltip={t('toolbar.checklist')}><ChecklistIcon /></ToolbarButton>
+          <ToolbarButton onAction={() => executeCommand('removeFormat')} tooltip={t('toolbar.clearFormatting')}><ClearFormattingIcon /></ToolbarButton>
         </div>
         
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2">
@@ -654,11 +587,13 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
                 ]}
                 onSelect={executeCommand} widthClass="w-56"
             />
-            <ToolbarDropdown label={<LineHeightIcon />} items={lineHeights} onSelect={applyLineHeight} widthClass="w-28" />
+             <ToolbarDropdown label={<LineHeightIcon />} items={lineHeights} onSelect={applyLineHeight} widthClass="w-28" />
         </div>
 
-         <div className="flex items-center gap-1">
-          <ToolbarButton onAction={() => executeCommand('removeFormat')} tooltip={t('toolbar.clearFormatting')}><ClearFormattingIcon /></ToolbarButton>
+        <div className="flex items-center gap-1">
+            <ColorPicker onAction={(color) => executeCommand('foreColor', color)} tooltip={t('toolbar.textColor')}><TextColorIcon /></ColorPicker>
+            <ColorPicker onAction={(color) => executeCommand('hiliteColor', color)} tooltip={t('toolbar.bgColor')}><BgColorIcon /></ColorPicker>
+            <ToolbarButton buttonRef={textShadowButtonRef} onAction={() => setIsTextShadowDropdownOpen(true)} tooltip={t('toolbar.textShadow')} isActive={toolbarState.textShadow !== 'none'}><TextShadowIcon /></ToolbarButton>
         </div>
       </div>
       <div className="flex items-center pl-2">
@@ -670,8 +605,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ editorRef, onCopyFormatting, isFormat
           <TextShadowDropdown
             targetRef={textShadowButtonRef}
             initialValue={toolbarState.textShadow}
-            onApply={applyTextShadow}
-            onRemove={removeTextShadow}
+            onApply={(shadow) => applyInlineStyle({ textShadow: shadow })}
+            onRemove={() => applyInlineStyle({ textShadow: 'none' })}
             onClose={() => setIsTextShadowDropdownOpen(false)}
           />
       )}
