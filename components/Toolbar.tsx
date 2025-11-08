@@ -65,29 +65,68 @@ const FontFamilyMenuItem: React.FC<{
     item: FontFamily;
     onSelect: (family: string, weight?: number) => void;
 }> = ({ item, onSelect }) => {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+    const [isMobileAccordionOpen, setIsMobileAccordionOpen] = useState(false);
     const itemRef = useRef<HTMLButtonElement>(null);
     const submenuTimer = useRef<number | null>(null);
     const [submenuPosition, setSubmenuPosition] = useState<{ top: string; left: string } | null>(null);
 
     const handleMouseEnter = () => {
+        if (isMobile) return;
         if (submenuTimer.current) clearTimeout(submenuTimer.current);
         if (item.weights) {
             if (itemRef.current) {
                 const rect = itemRef.current.getBoundingClientRect();
-                setSubmenuPosition({ top: `${rect.top}px`, left: `${rect.right + 4}px` });
+                const submenuWidth = 160; // w-40
+                const viewportWidth = window.innerWidth;
+
+                let left = rect.right + 4;
+                if (left + submenuWidth > viewportWidth) {
+                    left = rect.left - submenuWidth - 4;
+                }
+                
+                setSubmenuPosition({ top: `${rect.top}px`, left: `${left}px` });
             }
             setIsSubmenuOpen(true);
         }
     };
 
     const handleMouseLeave = () => {
+        if (isMobile) return;
         submenuTimer.current = window.setTimeout(() => {
             setIsSubmenuOpen(false);
         }, 200);
     };
 
-    const SubmenuPortal = (item.weights && isSubmenuOpen && submenuPosition) ? createPortal(
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (isMobile) {
+            if (item.weights) {
+                setIsMobileAccordionOpen(prev => !prev);
+            } else {
+                onSelect(item.value);
+            }
+        } else {
+            if (!item.weights) {
+                onSelect(item.value);
+            }
+        }
+    };
+    
+    const handleWeightSelect = (weight: number) => {
+        onSelect(item.value, weight);
+        setIsMobileAccordionOpen(false);
+    };
+
+    const SubmenuPortal = (!isMobile && item.weights && isSubmenuOpen && submenuPosition) ? createPortal(
         <div 
             data-menu-part="true"
             className="fixed w-40 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-[60] border border-gray-200 dark:border-gray-700"
@@ -108,12 +147,21 @@ const FontFamilyMenuItem: React.FC<{
         <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <button
                 ref={itemRef}
-                onMouseDown={(e) => { e.preventDefault(); if (!item.weights) onSelect(item.value); }}
+                onMouseDown={handleMouseDown}
                 className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-between"
             >
                 <span style={{ fontFamily: item.value }}>{item.label}</span>
                 {item.weights && <ChevronRightIcon />}
             </button>
+            {isMobile && isMobileAccordionOpen && item.weights && (
+                <div className="pl-4 border-l-2 border-gray-200 dark:border-gray-600 ml-2 bg-gray-50 dark:bg-gray-700/50">
+                    {item.weights.map(weight => (
+                        <button key={weight.value} onMouseDown={(e) => { e.preventDefault(); handleWeightSelect(weight.value); }} className="w-full text-left px-2 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <span style={{ fontFamily: item.value, fontWeight: weight.value }}>{weight.label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
             {SubmenuPortal}
         </div>
     );
@@ -128,11 +176,42 @@ const FontFamilyDropdown: React.FC<{
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
     
     const handleSelect = (family: string, weight?: number) => {
         onSelect(family, weight);
         setIsOpen(false);
     };
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (isOpen) {
+            setIsOpen(false);
+            return;
+        }
+
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const menuWidth = 224; // w-56
+            const menuMaxHeight = 320; // max-h-80
+    
+            let top = rect.bottom + 4;
+            let left = rect.left;
+    
+            if (left + menuWidth > window.innerWidth) {
+                left = rect.right - menuWidth;
+            }
+            if (left < 0) { left = 4; }
+    
+            if (top + menuMaxHeight > window.innerHeight && rect.top > menuMaxHeight) {
+                top = rect.top - menuMaxHeight - 4;
+            }
+            if (top < 0) { top = 4; }
+    
+            setMenuPosition({ top, left });
+            setIsOpen(true);
+        }
+    }
 
     useEffect(() => {
         if (!isOpen) return;
@@ -149,17 +228,17 @@ const FontFamilyDropdown: React.FC<{
         };
     }, [isOpen]);
 
-    const MenuPortal = createPortal(
+    const MenuPortal = menuPosition ? createPortal(
         <div data-menu-part="true" ref={menuRef} style={{ 
-            top: `${containerRef.current?.getBoundingClientRect().bottom + 4}px`, 
-            left: `${containerRef.current?.getBoundingClientRect().left}px` 
+            top: `${menuPosition.top}px`, 
+            left: `${menuPosition.left}px` 
         }} className="fixed w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto" role="menu">
             {items.map(item => (
                 <FontFamilyMenuItem key={item.value} item={item} onSelect={handleSelect} />
             ))}
         </div>,
         document.body
-    );
+    ) : null;
 
     return (
         <div ref={containerRef} data-menu-part="true" className="relative flex items-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 focus-within:ring-1 focus-within:ring-blue-500">
@@ -167,7 +246,7 @@ const FontFamilyDropdown: React.FC<{
                 {label}
             </div>
             <div className="h-full w-px bg-gray-300 dark:bg-gray-600"></div>
-            <button onMouseDown={(e) => { e.preventDefault(); setIsOpen(prev => !prev); }} aria-haspopup="true" aria-expanded={isOpen} className="p-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-700">
+            <button onMouseDown={handleToggle} aria-haspopup="true" aria-expanded={isOpen} className="p-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-700">
                 <ChevronDownIcon />
             </button>
             {isOpen && MenuPortal}
@@ -183,11 +262,36 @@ const ToolbarDropdown: React.FC<{ label: React.ReactNode; items: { value: string
 
     const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
+        if (isOpen) {
+            setIsOpen(false);
+            return;
+        }
+    
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
-            setMenuPosition({ top: rect.bottom + 4, left: rect.left });
+            
+            const widthMap: {[key: string]: number} = {
+                'w-28': 112, 'w-48': 192, 'w-56': 224
+            };
+            const menuWidth = widthMap[widthClass] || 192;
+            const menuHeight = (items.length * 34) + 8; // Estimate height
+    
+            let top = rect.bottom + 4;
+            let left = rect.left;
+    
+            if (left + menuWidth > window.innerWidth) {
+                left = rect.right - menuWidth;
+            }
+            if (left < 0) { left = 4; }
+    
+            if (top + menuHeight > window.innerHeight && rect.top > menuHeight) {
+                top = rect.top - menuHeight - 4;
+            }
+            if (top < 0) { top = 4; }
+    
+            setMenuPosition({ top, left });
+            setIsOpen(true);
         }
-        setIsOpen(prev => !prev);
     };
 
     const handleSelect = (value: string) => { onSelect(value); setIsOpen(false); };

@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob as GenAIBlob } from "@google/genai";
 import { CloseIcon, BotIcon, ImageIcon, MicIcon, SearchIcon, MapIcon, BrainCircuitIcon, SendIcon, StopCircleIcon, SparklesIcon } from './icons/EditorIcons';
@@ -300,7 +301,7 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
     );
 
     return (
-        <aside className="w-96 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full flex-shrink-0">
+        <aside className="w-full md:w-96 bg-gray-100 dark:bg-gray-800 md:border-l border-gray-200 dark:border-gray-700 flex flex-col h-full">
             <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <SparklesIcon className="text-yellow-500" />

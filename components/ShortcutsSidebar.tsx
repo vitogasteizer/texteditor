@@ -10,7 +10,7 @@ const ShortcutsSidebar: React.FC<ShortcutsSidebarProps> = ({ onClose, t }) => {
   const shortcuts = t('modals.about.shortcuts');
 
   return (
-    <aside className="w-80 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full flex-shrink-0">
+    <aside className="w-full md:w-80 bg-gray-100 dark:bg-gray-800 md:border-l border-gray-200 dark:border-gray-700 flex flex-col h-full">
       <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">{t('modals.about.shortcutsTitle')}</h2>
         <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label={t('settings.close')}>

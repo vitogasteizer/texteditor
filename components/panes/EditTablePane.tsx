@@ -20,8 +20,6 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
     const [borderWidth, setBorderWidth] = useState(1);
     const [wrapping, setWrapping] = useState<'topBottom' | 'left' | 'right' | 'absolute'>('topBottom');
 
-    // Fix: The check for selection.anchorNode was not correctly narrowing its type.
-    // By splitting the checks, we ensure TypeScript correctly infers the type of anchorNode.
     const checkSelectionState = useCallback(() => {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) {
@@ -35,7 +33,9 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
             return;
         }
 
-        if (!editingElement.contains(anchorNode)) {
+        const nodeToTest: Node | null = anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode;
+
+        if (!nodeToTest || !editingElement.contains(nodeToTest)) {
             setSelectionState({ isCursorInTable: false, cellCount: 0, isMerged: false });
             return;
         }

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon, KeyboardIcon, ChecklistIcon, UploadCloudIcon, PencilIcon, SlashIcon } from './icons/EditorIcons';
 import type { ShapeType } from '../App';
 import type { Language } from '../lib/translations';
@@ -63,12 +64,19 @@ const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, i
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [submenuPosition, setSubmenuPosition] = useState<{top: number, left: number} | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setOpenSubmenu(null);
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
+          const portals = document.querySelectorAll('[role="menu"]');
+          let isClickInsidePortal = false;
+          portals.forEach(portal => { if (portal.contains(target)) { isClickInsidePortal = true; } });
+          if (!isClickInsidePortal) {
+              setIsOpen(false);
+              setOpenSubmenu(null);
+          }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -83,8 +91,25 @@ const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, i
     }
   };
 
+  const handleSubmenuEnter = (e: React.MouseEvent, item: MenuItem) => {
+    if (item.items) {
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        const submenuWidth = 192; // w-48
+        
+        let left = rect.right;
+        if (left + submenuWidth > window.innerWidth) {
+            left = rect.left - submenuWidth;
+        }
+
+        setSubmenuPosition({ top: rect.top, left });
+        setOpenSubmenu(item.label);
+    }
+  };
+
+
   return (
-    <div className="relative" ref={menuRef} onMouseLeave={() => setOpenSubmenu(null)}>
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="true"
@@ -94,12 +119,12 @@ const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, i
         {label}
       </button>
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-200 dark:border-gray-700" role="menu">
+        <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-200 dark:border-gray-700" role="menu" onMouseLeave={() => setOpenSubmenu(null)}>
           {items.map((item, index) =>
             item.separator ? (
               <div key={`sep-${index}`} className="border-t border-gray-200 dark:border-gray-700 my-1" />
             ) : (
-              <div key={item.label} className="relative" onMouseEnter={() => item.items && setOpenSubmenu(item.label)}>
+              <div key={item.label} onMouseEnter={(e) => handleSubmenuEnter(e, item)}>
                   <button
                     onClick={() => handleAction(item.action)}
                     className="text-left w-full px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-between"
@@ -112,8 +137,13 @@ const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, i
                     </div>
                     {item.items && <ChevronRightIcon />}
                   </button>
-                  {item.items && openSubmenu === item.label && (
-                    <div className="absolute left-full -top-1 ml-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-20 border border-gray-200 dark:border-gray-700">
+                  {item.items && openSubmenu === item.label && submenuPosition && createPortal(
+                    <div 
+                        className="fixed w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-20 border border-gray-200 dark:border-gray-700"
+                        style={{ top: `${submenuPosition.top}px`, left: `${submenuPosition.left}px`}}
+                        onMouseEnter={() => setOpenSubmenu(item.label)}
+                        role="menu"
+                    >
                         {item.items.map(subItem => (
                              <button
                                 key={subItem.label}
@@ -125,7 +155,8 @@ const MenuDropdown: React.FC<{ label: string; items: MenuItem[] }> = ({ label, i
                                 <span>{subItem.label}</span>
                             </button>
                         ))}
-                    </div>
+                    </div>,
+                    document.body
                   )}
               </div>
             )
@@ -331,7 +362,7 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
     };
 
     return (
-        <nav className="px-2 py-1 flex items-center">
+        <nav className="px-2 py-1 flex items-center md:w-full">
             <div className="md:hidden">
                 <button
                     onClick={() => setIsMobileMenuOpen(true)}
@@ -346,7 +377,7 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
                 {menus.map(menu => <MenuDropdown key={menu.label} label={menu.label} items={menu.items} />)}
             </div>
             
-            <div className="flex-grow" />
+            <div className="flex-grow hidden" />
 
             <AutoSaveStatus isSaving={props.isSaving} lastSaved={props.lastSaved} isDocumentSaved={props.isDocumentSaved} t={t} />
             

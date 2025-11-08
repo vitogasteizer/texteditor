@@ -1703,12 +1703,22 @@ const App: React.FC = () => {
     setIsPageSetupVisible(false);
   };
 
+  const handleCloseSidebars = () => {
+    setActivePanel(null);
+    setEditingElement(null);
+    setSelectedElement(null);
+    setIsCommentsSidebarVisible(false);
+    setIsAiSidekickVisible(false);
+    setIsShortcutsSidebarVisible(false);
+  };
+
+  const isAnySidebarOpen = isAiSidekickVisible || activePanel || isCommentsSidebarVisible || isShortcutsSidebarVisible;
 
   return (
     <div className="h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
       {view === 'editor' ? (
         <div className="flex-grow flex flex-col overflow-hidden">
-            <header className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+            <header className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 shadow-sm flex items-center md:block border-b border-gray-200 dark:border-gray-700">
                  <MenuBar 
                   onNewDocument={handleNewDocument}
                   onSave={handleSaveDocument}
@@ -1764,23 +1774,25 @@ const App: React.FC = () => {
                   onInsertDrawing={() => { saveSelection(); setIsDrawingModalVisible(true); setEditingDrawingElement(null); }}
                   t={t}
                 />
-                <Toolbar 
-                  editorRef={editorRef} 
-                  onCopyFormatting={handleCopyFormatting} 
-                  isFormatPainterActive={isFormatPainterActive}
-                  onToggleAiSidekick={() => {
-                      if (!checkAiAvailability()) return;
-                      setIsAiSidekickVisible(prev => !prev);
-                      setActivePanel(null);
-                      setIsCommentsSidebarVisible(false);
-                      setIsShortcutsSidebarVisible(false);
-                  }}
-                  onInsertChecklist={handleInsertChecklist}
-                  t={t}
-                />
+                <div className="w-full md:border-t md:border-gray-200 md:dark:border-gray-700">
+                    <Toolbar 
+                      editorRef={editorRef} 
+                      onCopyFormatting={handleCopyFormatting} 
+                      isFormatPainterActive={isFormatPainterActive}
+                      onToggleAiSidekick={() => {
+                          if (!checkAiAvailability()) return;
+                          setIsAiSidekickVisible(prev => !prev);
+                          setActivePanel(null);
+                          setIsCommentsSidebarVisible(false);
+                          setIsShortcutsSidebarVisible(false);
+                      }}
+                      onInsertChecklist={handleInsertChecklist}
+                      t={t}
+                    />
+                </div>
             </header>
             
-            <div className="flex-grow flex overflow-hidden">
+            <div className="flex-grow flex overflow-hidden relative">
                 <main className="flex-grow overflow-auto bg-gray-200 dark:bg-gray-600">
                     <div 
                         className="py-12 transition-transform duration-200" 
@@ -1819,51 +1831,61 @@ const App: React.FC = () => {
                     </div>
                 </main>
                 
-                <div className="flex-shrink-0">
-                    {isAiSidekickVisible ? (
-                        <AiSidekick
-                            ai={aiRef.current}
-                            onClose={() => setIsAiSidekickVisible(false)}
-                            onInsertText={(text) => {
-                                saveSelection();
-                                restoreSelection();
-                                document.execCommand('insertHTML', false, text);
-                            }}
-                            setToast={setToast}
-                            t={t}
+                {isAnySidebarOpen && (
+                    <>
+                        {/* Backdrop for mobile */}
+                        <div 
+                            className="md:hidden fixed inset-0 bg-black bg-opacity-25 z-30" 
+                            onClick={handleCloseSidebars} 
                         />
-                    ) : activePanel ? (
-                        <SettingsSidebar
-                            activePanel={activePanel}
-                            editingElement={editingElement}
-                            onClose={() => { setActivePanel(null); setEditingElement(null); setSelectedElement(null); }}
-                            onReplaceAll={handleReplaceAll}
-                            onApplyLink={handleApplyLink}
-                            onApplyImageSettings={handleApplyImageSettings}
-                            onInsertTable={handleInsertTable}
-                            onUpdateElementStyle={handleUpdateElementStyle}
-                            onChangeZIndex={handleChangeZIndex}
-                            onAiImageEdit={(prompt) => handleAiImageEdit(prompt, editingElement as HTMLImageElement)}
-                            onOpenCropModal={handleOpenCropModal}
-                            onTableAction={handleTableAction}
-                            onTableStyle={handleTableStyle}
-                            t={t}
-                        />
-                    ) : isCommentsSidebarVisible ? (
-                        <CommentsSidebar 
-                            comments={comments.filter(c => !c.resolved)} 
-                            onResolve={handleResolveComment}
-                            onClose={() => setIsCommentsSidebarVisible(false)}
-                            onAddComment={() => { saveSelection(); handleOpenCommentModal(); }}
-                            t={t}
-                        />
-                    ) : isShortcutsSidebarVisible ? (
-                        <ShortcutsSidebar 
-                            onClose={() => setIsShortcutsSidebarVisible(false)}
-                            t={t}
-                        />
-                    ) : null}
-                </div>
+                        {/* Sidebar container */}
+                        <div className="absolute top-0 right-0 h-full w-screen max-w-sm md:w-auto md:max-w-none md:relative z-40 md:flex-shrink-0">
+                            {isAiSidekickVisible ? (
+                                <AiSidekick
+                                    ai={aiRef.current}
+                                    onClose={handleCloseSidebars}
+                                    onInsertText={(text) => {
+                                        saveSelection();
+                                        restoreSelection();
+                                        document.execCommand('insertHTML', false, text);
+                                    }}
+                                    setToast={setToast}
+                                    t={t}
+                                />
+                            ) : activePanel ? (
+                                <SettingsSidebar
+                                    activePanel={activePanel}
+                                    editingElement={editingElement}
+                                    onClose={handleCloseSidebars}
+                                    onReplaceAll={handleReplaceAll}
+                                    onApplyLink={handleApplyLink}
+                                    onApplyImageSettings={handleApplyImageSettings}
+                                    onInsertTable={handleInsertTable}
+                                    onUpdateElementStyle={handleUpdateElementStyle}
+                                    onChangeZIndex={handleChangeZIndex}
+                                    onAiImageEdit={(prompt) => handleAiImageEdit(prompt, editingElement as HTMLImageElement)}
+                                    onOpenCropModal={handleOpenCropModal}
+                                    onTableAction={handleTableAction}
+                                    onTableStyle={handleTableStyle}
+                                    t={t}
+                                />
+                            ) : isCommentsSidebarVisible ? (
+                                <CommentsSidebar 
+                                    comments={comments.filter(c => !c.resolved)} 
+                                    onResolve={handleResolveComment}
+                                    onClose={handleCloseSidebars}
+                                    onAddComment={() => { saveSelection(); handleOpenCommentModal(); }}
+                                    t={t}
+                                />
+                            ) : isShortcutsSidebarVisible ? (
+                                <ShortcutsSidebar 
+                                    onClose={handleCloseSidebars}
+                                    t={t}
+                                />
+                            ) : null}
+                        </div>
+                    </>
+                )}
             </div>
 
             <StatusBar
