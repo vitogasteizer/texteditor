@@ -43,7 +43,8 @@ const EditTablePane: React.FC<EditTablePaneProps> = ({ editingElement, onTableAc
         const selectedCells: HTMLTableCellElement[] = [];
         const cells = editingElement.querySelectorAll('td, th');
         Array.from(cells).forEach(cell => {
-            if (selection.containsNode(cell, true)) {
+            // FIX: Cast `cell` to `Node` to satisfy `selection.containsNode`'s expected argument type.
+            if (selection.containsNode(cell as Node, true)) {
                 selectedCells.push(cell as HTMLTableCellElement);
             }
         });

@@ -203,8 +203,11 @@ const App: React.FC = () => {
   }, [language]);
 
   useEffect(() => {
-    if (process.env.API_KEY) {
-      aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // For client-side apps, environment variables usually need a prefix.
+    // We check for common prefixes used by Vite and Create React App.
+    const apiKey = process.env.VITE_API_KEY || process.env.REACT_APP_API_KEY;
+    if (apiKey) {
+      aiRef.current = new GoogleGenAI({ apiKey: apiKey });
     }
   }, []);
 
