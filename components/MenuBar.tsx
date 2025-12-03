@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon, KeyboardIcon, ChecklistIcon, UploadCloudIcon, PencilIcon, SlashIcon } from './icons/EditorIcons';
+import { MenuIcon, CloseIcon, FilePlusIcon, SaveIcon, FolderIcon, DownloadIcon, PrinterIcon, UndoIcon, RedoIcon, ScissorsIcon, CopyIcon, ClipboardIcon, SelectAllIcon, SearchIcon, LinkIcon, ImageIcon, TableIcon, MinusIcon, MessageSquareIcon, CodeIcon, BarChartIcon, EyeIcon, MaximizeIcon, InfoIcon, OmegaIcon, PaintBrushIcon, PdfIcon, SquareIcon, CircleIcon, TriangleIcon, TypeIcon, ChevronRightIcon, FileTextIcon, SplitSquareVerticalIcon, RectangleVerticalIcon, RectangleHorizontalIcon, LanguageIcon, SparklesIcon, Volume2Icon, KeyboardIcon, ChecklistIcon, UploadCloudIcon, PencilIcon, SlashIcon, MathIcon } from './icons/EditorIcons';
 import type { ShapeType } from '../App';
 import type { Language } from '../lib/translations';
 
@@ -22,6 +23,7 @@ type MenuItem =
 
 interface MenuBarProps {
   onNewDocument: () => void;
+  onNewFromTemplate: () => void;
   onSave: () => void;
   onViewSaved: () => void;
   onExportToWord: () => void;
@@ -37,6 +39,7 @@ interface MenuBarProps {
   onInsertHorizontalRule: () => void;
   onInsertPageBreak: () => void;
   onInsertDrawing: () => void;
+  onInsertMath: () => void;
   onAddComment: () => void;
   onOpenSourceCode: () => void;
   onOpenWordCount: () => void;
@@ -254,6 +257,7 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
 
     const fileMenuItems: MenuItem[] = [
         { label: t('menu.fileNew'), action: props.onNewDocument, icon: <FilePlusIcon isMenuIcon /> },
+        { label: 'New from Template...', action: props.onNewFromTemplate, icon: <FileTextIcon isMenuIcon /> },
         { label: t('menu.fileSave'), action: props.onSave, icon: <SaveIcon isMenuIcon /> },
         { label: t('menu.fileViewSaved'), action: props.onViewSaved, icon: <FolderIcon isMenuIcon /> },
         { separator: true },
@@ -296,6 +300,7 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
         ] },
         { label: t('menu.insertHorizontalLine'), action: props.onInsertHorizontalRule, icon: <MinusIcon isMenuIcon /> },
         { label: t('menu.insertPageBreak'), action: props.onInsertPageBreak, icon: <SplitSquareVerticalIcon isMenuIcon /> },
+        { label: 'Equation (KaTeX)', action: props.onInsertMath, icon: <MathIcon isMenuIcon /> },
         { label: t('menu.insertSpecialChar'), action: props.onOpenSpecialCharacters, icon: <OmegaIcon isMenuIcon /> },
         { separator: true },
         { label: t('menu.insertComment'), action: props.onAddComment, icon: <MessageSquareIcon isMenuIcon /> },

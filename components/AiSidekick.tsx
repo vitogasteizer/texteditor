@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob as GenAIBlob } from "@google/genai";
 import { CloseIcon, BotIcon, ImageIcon, MicIcon, SearchIcon, MapIcon, BrainCircuitIcon, SendIcon, StopCircleIcon, SparklesIcon } from './icons/EditorIcons';
@@ -63,6 +60,7 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
     
     // Chat state
     const [chatMode, setChatMode] = useState<ChatMode>('default');
+    const [thinkingBudget, setThinkingBudget] = useState(1024);
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [isChatting, setIsChatting] = useState(false);
@@ -127,8 +125,9 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
             let modelName = 'gemini-2.5-flash';
             let config: any = {};
             if (chatMode === 'thinking') {
-                modelName = 'gemini-2.5-pro';
-                config.thinkingConfig = { thinkingBudget: 32768 };
+                modelName = 'gemini-2.5-pro-preview-02-19'; // Latest model supporting thinking
+                // Important: thinkingBudget must be set when using thinkingConfig
+                config.thinkingConfig = { thinkingBudget: thinkingBudget }; 
             } else if (chatMode === 'search') {
                 config.tools = [{ googleSearch: {} }];
             } else if (chatMode === 'maps') {
@@ -294,108 +293,204 @@ const AiSidekick: React.FC<AiSidekickProps> = ({ ai, onClose, onInsertText, setT
       <button
         onClick={() => setChatMode(mode)}
         title={label}
-        className={`p-2 rounded-md transition-colors ${chatMode === mode ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+        className={`p-2 rounded-md transition-all duration-200 ${chatMode === mode ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'}`}
       >
         {icon}
       </button>
     );
 
     return (
-        <aside className="w-full md:w-96 bg-gray-100 dark:bg-gray-800 md:border-l border-gray-200 dark:border-gray-700 flex flex-col h-full">
-            <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <aside className="w-full md:w-96 bg-gray-50 dark:bg-gray-800 md:border-l border-gray-200 dark:border-gray-700 flex flex-col h-full shadow-2xl z-50">
+            <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-900">
                 <div className="flex items-center gap-2">
-                    <SparklesIcon className="text-yellow-500" />
-                    <h2 className="font-semibold text-gray-800 dark:text-gray-100">{t('sidekick.title')}</h2>
+                    <SparklesIcon className="text-yellow-500 w-6 h-6 animate-pulse" />
+                    <h2 className="font-bold text-gray-800 dark:text-gray-100">{t('sidekick.title')}</h2>
                 </div>
-                <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><CloseIcon /></button>
+                <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><CloseIcon /></button>
             </header>
 
-            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex justify-around bg-gray-200 dark:bg-gray-900/50 rounded-md p-1">
-                    <button onClick={() => setActiveTab('chat')} className={`px-4 py-1.5 text-sm font-medium rounded-md flex-1 ${activeTab === 'chat' ? 'bg-white dark:bg-gray-700 shadow' : ''}`}>{t('sidekick.chat')}</button>
-                    <button onClick={() => setActiveTab('image')} className={`px-4 py-1.5 text-sm font-medium rounded-md flex-1 ${activeTab === 'image' ? 'bg-white dark:bg-gray-700 shadow' : ''}`}>{t('sidekick.image')}</button>
-                    <button onClick={() => setActiveTab('live')} className={`px-4 py-1.5 text-sm font-medium rounded-md flex-1 ${activeTab === 'live' ? 'bg-white dark:bg-gray-700 shadow' : ''}`}>{t('sidekick.live')}</button>
+            <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                <div className="flex justify-around bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <button onClick={() => setActiveTab('chat')} className={`px-4 py-1.5 text-sm font-medium rounded-md flex-1 transition-all ${activeTab === 'chat' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>{t('sidekick.chat')}</button>
+                    <button onClick={() => setActiveTab('image')} className={`px-4 py-1.5 text-sm font-medium rounded-md flex-1 transition-all ${activeTab === 'image' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>{t('sidekick.image')}</button>
+                    <button onClick={() => setActiveTab('live')} className={`px-4 py-1.5 text-sm font-medium rounded-md flex-1 transition-all ${activeTab === 'live' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>{t('sidekick.live')}</button>
                 </div>
             </div>
 
             {/* Chat Tab */}
             {activeTab === 'chat' && (
-                <div className="flex-grow flex flex-col overflow-hidden">
-                    <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2">
-                        <ChatModeButton mode="default" icon={<BotIcon />} label={t('sidekick.chatModes.default')} />
-                        <ChatModeButton mode="search" icon={<SearchIcon />} label={t('sidekick.chatModes.search')} />
-                        <ChatModeButton mode="maps" icon={<MapIcon />} label={t('sidekick.chatModes.maps')} />
-                        <ChatModeButton mode="thinking" icon={<BrainCircuitIcon />} label={t('sidekick.chatModes.thinking')} />
+                <div className="flex-grow flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-800">
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50">
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                            <ChatModeButton mode="default" icon={<BotIcon />} label={t('sidekick.chatModes.default')} />
+                            <ChatModeButton mode="search" icon={<SearchIcon />} label={t('sidekick.chatModes.search')} />
+                            <ChatModeButton mode="maps" icon={<MapIcon />} label={t('sidekick.chatModes.maps')} />
+                            <ChatModeButton mode="thinking" icon={<BrainCircuitIcon />} label={t('sidekick.chatModes.thinking')} />
+                        </div>
+                        {chatMode === 'thinking' && (
+                             <div className="px-1 pt-2 pb-1 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800/30">
+                                <label className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex justify-between mb-1">
+                                    <span>Thinking Budget</span>
+                                    <span>{thinkingBudget} tokens</span>
+                                </label>
+                                <input 
+                                    type="range" 
+                                    min="1024" 
+                                    max="32768" 
+                                    step="1024" 
+                                    value={thinkingBudget} 
+                                    onChange={(e) => setThinkingBudget(parseInt(e.target.value))}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1">Higher budget allows specifically designed "thinking" models to reason more deeply.</p>
+                             </div>
+                        )}
                     </div>
                     <div ref={chatBodyRef} className="flex-grow p-4 overflow-y-auto space-y-4">
+                        {chatHistory.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-50">
+                                <BotIcon className="w-12 h-12 mb-2" />
+                                <p className="text-sm">Start a conversation...</p>
+                            </div>
+                        )}
                         {chatHistory.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-xs md:max-w-sm rounded-lg px-3 py-2 ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-700'}`}>
-                                    <p className="text-sm" dangerouslySetInnerHTML={{__html: msg.text.replace(/\n/g, '<br/>')}}></p>
-                                    {msg.isThinking && <div className="mt-2 h-2 w-16 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>}
+                                <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none border border-gray-100 dark:border-gray-600'}`}>
+                                    <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{__html: msg.text.replace(/\n/g, '<br/>')}}></div>
+                                    {msg.isThinking && (
+                                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400 animate-pulse">
+                                            <BrainCircuitIcon className="w-3 h-3" />
+                                            <span>Thinking...</span>
+                                        </div>
+                                    )}
                                     {msg.sources && msg.sources.length > 0 && (
-                                        <div className="mt-2 border-t pt-1">
-                                            {msg.sources.map((s, si) => <a key={si} href={s.web?.uri || s.maps?.uri} target="_blank" className="text-xs text-blue-300 block truncate">{s.web?.title || s.maps?.title}</a>)}
+                                        <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600/50">
+                                            <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Sources</p>
+                                            <div className="flex flex-col gap-1">
+                                                {msg.sources.map((s, si) => (
+                                                    <a key={si} href={s.web?.uri || s.maps?.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-500 hover:underline truncate">
+                                                        <span className="w-1 h-1 rounded-full bg-blue-500"></span>
+                                                        {s.web?.title || s.maps?.title}
+                                                    </a>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
-                        <input
-                            type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleChatSubmit()}
-                            placeholder={t('sidekick.chatPlaceholder')}
-                            className="flex-grow w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
-                            disabled={isChatting}
-                        />
-                        <button onClick={handleChatSubmit} disabled={isChatting || !chatInput.trim()} className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"><SendIcon /></button>
+                    <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                        <div className="relative flex items-center">
+                            <input
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleChatSubmit()}
+                                placeholder={t('sidekick.chatPlaceholder')}
+                                className="flex-grow w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+                                disabled={isChatting}
+                            />
+                            <button 
+                                onClick={handleChatSubmit} 
+                                disabled={isChatting || !chatInput.trim()} 
+                                className="absolute right-1.5 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-400 transition-all shadow-md"
+                            >
+                                <SendIcon className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Image Tab */}
             {activeTab === 'image' && (
-                 <div className="flex-grow flex flex-col overflow-hidden">
-                    <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                 <div className="flex-grow flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-800">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50">
                         <p className="text-sm text-gray-600 dark:text-gray-400">{t('sidekick.imageDescription')}</p>
                     </div>
                     <div className="flex-grow p-4 overflow-y-auto">
-                        {isGenerating && <div className="text-center">{t('sidekick.imageGenerating')}</div>}
-                        <div className="grid grid-cols-2 gap-2">
-                            {generatedImages.map((src, i) => <img key={i} src={src} alt="Generated image" onClick={() => onInsertText(`<img src="${src}" />`)} className="rounded-md cursor-pointer hover:opacity-80 transition-opacity" />)}
+                        {isGenerating && (
+                            <div className="flex flex-col items-center justify-center h-40 gap-3">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span className="text-sm text-gray-500">{t('sidekick.imageGenerating')}</span>
+                            </div>
+                        )}
+                        {!isGenerating && generatedImages.length === 0 && (
+                             <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-50">
+                                <ImageIcon className="w-12 h-12 mb-2" />
+                                <p className="text-sm">Enter a prompt to generate images</p>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3">
+                            {generatedImages.map((src, i) => (
+                                <div key={i} className="group relative rounded-lg overflow-hidden shadow-md aspect-square bg-white dark:bg-gray-700">
+                                    <img src={src} alt="Generated" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button 
+                                            onClick={() => onInsertText(`<img src="${src}" style="max-width:100%" />`)}
+                                            className="px-3 py-1 bg-white text-black text-xs font-bold rounded-full transform scale-90 group-hover:scale-100 transition-transform"
+                                        >
+                                            Insert
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
-                        <input
-                            type="text"
-                            value={imagePrompt}
-                            onChange={e => setImagePrompt(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleGenerateImage()}
-                            placeholder={t('sidekick.imagePlaceholder')}
-                            className="flex-grow w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
-                            disabled={isGenerating}
-                        />
-                        <button onClick={handleGenerateImage} disabled={isGenerating || !imagePrompt.trim()} className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"><ImageIcon /></button>
+                    <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                        <div className="relative flex items-center">
+                            <input
+                                type="text"
+                                value={imagePrompt}
+                                onChange={e => setImagePrompt(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleGenerateImage()}
+                                placeholder={t('sidekick.imagePlaceholder')}
+                                className="flex-grow w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+                                disabled={isGenerating}
+                            />
+                            <button 
+                                onClick={handleGenerateImage} 
+                                disabled={isGenerating || !imagePrompt.trim()} 
+                                className="absolute right-1.5 p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 disabled:opacity-50 disabled:bg-gray-400 transition-all shadow-md"
+                            >
+                                <ImageIcon className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
             
             {/* Live Tab */}
             {activeTab === 'live' && (
-                <div className="flex-grow flex flex-col items-center justify-center p-4 text-center">
-                    <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">{t('sidekick.liveDescription')}</p>
-                    <button onClick={isLive ? cleanupLive : handleStartLive} className={`flex items-center gap-3 px-6 py-3 rounded-full text-white font-semibold transition-colors ${isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
-                        {isLive ? <StopCircleIcon /> : <MicIcon />}
+                <div className="flex-grow flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+                    <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-8 transition-all duration-500 ${isLive ? 'bg-red-50 dark:bg-red-900/20 shadow-[0_0_40px_rgba(239,68,68,0.3)]' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                        {isLive ? (
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
+                                <MicIcon className="w-12 h-12 text-red-500 relative z-10" />
+                            </div>
+                        ) : (
+                            <MicIcon className="w-12 h-12 text-blue-500 opacity-50" />
+                        )}
+                    </div>
+                    
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Gemini Live</h3>
+                    <p className="mb-8 text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">{t('sidekick.liveDescription')}</p>
+                    
+                    <button 
+                        onClick={isLive ? cleanupLive : handleStartLive} 
+                        className={`flex items-center gap-3 px-8 py-4 rounded-full text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 ${isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    >
+                        {isLive ? <StopCircleIcon className="w-6 h-6" /> : <MicIcon className="w-6 h-6" />}
                         <span>{isLive ? t('sidekick.liveStop') : t('sidekick.liveStart')}</span>
                     </button>
+
                     {isLive && liveTranscript && (
-                        <div className="mt-4 w-full text-left p-2 bg-white dark:bg-gray-700 rounded-md h-24 overflow-y-auto">
-                           <p className="text-sm"><strong className="text-blue-500">You:</strong> {liveTranscript.user}</p>
-                           <p className="text-sm"><strong className="text-green-500">AI:</strong> {liveTranscript.model}</p>
+                        <div className="mt-8 w-full text-left p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-100 dark:border-gray-700 shadow-lg h-40 overflow-y-auto">
+                           {liveTranscript.user && <p className="text-sm mb-2"><strong className="text-blue-500">You:</strong> {liveTranscript.user}</p>}
+                           {liveTranscript.model && <p className="text-sm"><strong className="text-green-500">Gemini:</strong> {liveTranscript.model}</p>}
+                           {!liveTranscript.user && !liveTranscript.model && <p className="text-xs text-center text-gray-400 italic">Listening...</p>}
                         </div>
                     )}
                 </div>

@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useRef } from 'react';
 
 interface ObjectWrapperProps {
@@ -7,9 +6,10 @@ interface ObjectWrapperProps {
   onUpdate: (element: HTMLElement, styles: React.CSSProperties) => void;
   onDeselect: () => void;
   onDoubleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  zoomLevel: number; // Add zoomLevel prop
 }
 
-const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, onDeselect, onDoubleClick }) => {
+const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, onDeselect, onDoubleClick, zoomLevel }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef({
     isDragging: false,
@@ -25,28 +25,59 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, 
 
   const isAbsolute = targetElement.style.position === 'absolute';
 
-  useEffect(() => {
-    const updatePosition = () => {
-      if (!targetElement || !wrapperRef.current) return;
-      
-      // Use offsetTop/Left for positioning, as it's relative to the offsetParent (#editor-page),
-      // which is the same context as the wrapper itself. This is more reliable than getBoundingClientRect
-      // for elements within a scrolling container.
-      wrapperRef.current.style.top = `${targetElement.offsetTop}px`;
-      wrapperRef.current.style.left = `${targetElement.offsetLeft}px`;
-      wrapperRef.current.style.width = `${targetElement.offsetWidth}px`;
-      wrapperRef.current.style.height = `${targetElement.offsetHeight}px`;
-    };
+  const updatePosition = () => {
+    if (!targetElement || !wrapperRef.current) return;
+    
+    const editorPage = document.getElementById('editor-page');
+    if (!editorPage) return;
 
+    // Get raw visual rects
+    const parentRect = editorPage.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+
+    // Calculate scale factor (transform: scale(x))
+    // We can assume the passed zoomLevel prop is the source of truth, 
+    // or calculate it from the visual width vs offsetWidth.
+    // Using prop is safer if provided correctly.
+    const scale = zoomLevel / 100;
+
+    // Calculate offset in CSS pixels (unscaled)
+    const top = (targetRect.top - parentRect.top) / scale;
+    const left = (targetRect.left - parentRect.left) / scale;
+    const width = targetRect.width / scale;
+    const height = targetRect.height / scale;
+
+    wrapperRef.current.style.top = `${top}px`;
+    wrapperRef.current.style.left = `${left}px`;
+    wrapperRef.current.style.width = `${width}px`;
+    wrapperRef.current.style.height = `${height}px`;
+  };
+
+  useEffect(() => {
     updatePosition();
-    // Watch for style changes on the target element to keep the wrapper in sync.
+    
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    document.addEventListener('selectionchange', updatePosition);
+    
     const observer = new MutationObserver(updatePosition);
-    observer.observe(targetElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    observer.observe(targetElement, { 
+      attributes: true, 
+      childList: true, 
+      subtree: true,
+      attributeFilter: ['style', 'class', 'width', 'height'] 
+    });
+
+    const frameId = requestAnimationFrame(updatePosition);
 
     return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      document.removeEventListener('selectionchange', updatePosition);
       observer.disconnect();
+      cancelAnimationFrame(frameId);
     };
-  }, [targetElement]);
+  }, [targetElement, zoomLevel]); // Re-run when zoomLevel changes
   
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, handle?: string) => {
     e.preventDefault();
@@ -55,6 +86,8 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, 
     const interaction = interactionRef.current;
     interaction.startX = e.clientX;
     interaction.startY = e.clientY;
+    
+    // Use offsetWidth/Height for the element's actual CSS size (unscaled internally)
     interaction.startWidth = targetElement.offsetWidth;
     interaction.startHeight = targetElement.offsetHeight;
 
@@ -79,8 +112,11 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, 
     const interaction = interactionRef.current;
     if (!interaction.isDragging && !interaction.isResizing) return;
 
-    const dx = e.clientX - interaction.startX;
-    const dy = e.clientY - interaction.startY;
+    const scale = zoomLevel / 100;
+
+    // Adjust delta by scale to map back to CSS pixels
+    const dx = (e.clientX - interaction.startX) / scale;
+    const dy = (e.clientY - interaction.startY) / scale;
 
     const newStyles: React.CSSProperties = {};
 
@@ -111,6 +147,7 @@ const ObjectWrapper: React.FC<ObjectWrapperProps> = ({ targetElement, onUpdate, 
     }
     
     Object.assign(targetElement.style, newStyles);
+    updatePosition();
   };
   
   const handleMouseUp = (e: MouseEvent) => {

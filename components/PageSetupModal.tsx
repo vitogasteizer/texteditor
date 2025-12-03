@@ -54,8 +54,15 @@ const PageSetupModal: React.FC<PageSetupModalProps> = ({ isOpen, onClose, onAppl
 
   const paperSizes: { value: PageSize, label: string }[] = [
     { value: 'Letter', label: `Letter (8.5" x 11")` },
-    { value: 'A4', label: `A4 (210mm x 297mm)` },
     { value: 'Legal', label: `Legal (8.5" x 14")` },
+    { value: 'Tabloid', label: `Tabloid (11" x 17")` },
+    { value: 'Statement', label: `Statement (5.5" x 8.5")` },
+    { value: 'Executive', label: `Executive (7.25" x 10.5")` },
+    { value: 'A3', label: `A3 (297mm x 420mm)` },
+    { value: 'A4', label: `A4 (210mm x 297mm)` },
+    { value: 'A5', label: `A5 (148mm x 210mm)` },
+    { value: 'B4', label: `B4 (250mm x 353mm)` },
+    { value: 'B5', label: `B5 (176mm x 250mm)` },
   ];
 
   return (

@@ -14,6 +14,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@300;400;500;700;900&family=FiraGO:wght@300;400;500;700;900&family=Lato:wght@300;400;700;900&family=Lobster&family=Merriweather:wght@400;700&family=Montserrat:wght@300;400;500;700;900&family=Noto+Sans+Georgian:wght@300;400;500;700;900&family=Oswald:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Google API Scripts -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <!-- KaTeX for Math Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <style>
     @media (max-width: 768px) {
       /* Ensure full height for app container */
@@ -126,17 +132,19 @@
         height: 0 !important;
         visibility: hidden !important;
         color: transparent !important;
+        background: none !important;
+        box-shadow: none !important;
       }
       /* Hide the text inside the indicator for printing */
       .page-break-indicator * { display: none !important; }
     }
 
     /* Editor-specific styles */
-    #editor-page > div[contenteditable="true"] ul:not([data-type="checklist"]) {
+    #editor-page > div > div[contenteditable="true"] ul:not([data-type="checklist"]) {
       list-style-type: disc;
       padding-left: 2em;
     }
-    #editor-page > div[contenteditable="true"] ol {
+    #editor-page > div > div[contenteditable="true"] ol {
       list-style-type: decimal;
       padding-left: 2em;
     }
@@ -166,6 +174,58 @@
       width: 1rem;
       height: 1rem;
       cursor: pointer;
+    }
+
+    /* Math Styles */
+    .math-node {
+      display: inline-block;
+      cursor: pointer;
+      user-select: none;
+      padding: 0 2px;
+    }
+    .math-node:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-radius: 4px;
+    }
+
+    /* Visual Page Break in Editor */
+    /* IMPORTANT: This targets divs with this class specifically to create the "gap" effect */
+    .page-break-indicator {
+      display: block;
+      position: relative;
+      height: 30px; /* Thicker gap */
+      background-color: #e5e7eb; /* gray-200 background matching editor view bg */
+      
+      /* Negative margins to pull the gap out to the edge of the paper container.
+         These CSS variables are set on #editor-page by App.tsx */
+      margin-left: calc(-1 * var(--page-margin-left, 1in)) !important;
+      margin-right: calc(-1 * var(--page-margin-right, 1in)) !important;
+      width: calc(100% + var(--page-margin-left, 1in) + var(--page-margin-right, 1in)) !important;
+      max-width: none !important;
+      
+      margin-top: 30px;
+      margin-bottom: 30px;
+      
+      /* Borders to simulate page edges */
+      border-top: 1px solid #d1d5db; /* Bottom of page 1 */
+      border-bottom: 1px solid #d1d5db; /* Top of page 2 */
+      
+      /* Shadow to create depth */
+      box-shadow: inset 0 4px 6px -2px rgba(0, 0, 0, 0.1), inset 0 -4px 6px -2px rgba(0, 0, 0, 0.1);
+      
+      user-select: none;
+      pointer-events: none;
+    }
+    
+    .dark .page-break-indicator {
+      background-color: #4b5563; /* gray-600 matching dark mode bg */
+      border-color: #374151;
+      box-shadow: inset 0 4px 6px -2px rgba(0, 0, 0, 0.5), inset 0 -4px 6px -2px rgba(0, 0, 0, 0.5);
+    }
+    
+    /* Table Resizing Cursor */
+    .col-resize {
+        cursor: col-resize;
     }
   </style>
   <script type="importmap">
