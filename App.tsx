@@ -1022,7 +1022,7 @@ const App: React.FC = () => {
             <div className="flex-grow flex overflow-hidden relative">
                 <main className="flex-grow flex flex-col bg-gray-200 dark:bg-gray-600 print-view relative overflow-hidden">
                     <div className="flex-grow overflow-auto relative flex flex-col items-center">
-                        <div className="sticky top-0 z-20 flex flex-col items-center bg-gray-200 dark:bg-gray-600 w-full min-w-max">
+                        <div className="sticky top-0 z-20 hidden md:flex flex-col items-center bg-gray-200 dark:bg-gray-600 w-full md:min-w-max">
                              <div className="bg-white dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600 h-6 flex shadow-sm">
                                  <div className="w-6 flex-none bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-600 z-30"></div>
                                  <div className="flex-none" style={{ width: pageW * (zoomLevel / 100) }}>
@@ -1032,18 +1032,18 @@ const App: React.FC = () => {
                              </div>
                         </div>
 
-                        <div className="flex min-w-max">
-                            <div className="sticky left-0 z-10 w-6 flex-none flex flex-col items-end bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600">
+                        <div className="flex w-full md:w-auto md:min-w-max justify-center md:justify-start">
+                            <div className="sticky left-0 z-10 w-6 flex-none hidden md:flex flex-col items-end bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600">
                                  <Ruler orientation="vertical" length={pageH} zoom={zoomLevel} margins={pageMargins} pageWidth={pageW} pageHeight={pageH} />
                             </div>
 
-                            <div className="p-8 md:p-12 transition-transform duration-200 origin-top-left" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left' }} onContextMenu={handleContextMenu}>
+                            <div className="editor-zoom-container w-full md:w-auto p-0 md:p-12 transition-transform duration-200 md:origin-top-left flex justify-center md:block" style={{ transform: window.innerWidth < 768 ? 'none' : `scale(${zoomLevel / 100})`, transformOrigin: 'top left' }} onContextMenu={handleContextMenu}>
                                 <div 
                                     id="editor-page" 
                                     className="relative bg-white dark:bg-gray-900 shadow-2xl box-border"
                                     style={pageContainerStyle}
                                 >
-                                    <div style={editorContentStyle}>
+                                    <div className="editor-content-wrapper" style={editorContentStyle}>
                                         <Editor 
                                           ref={editorRef} 
                                           content={content} 

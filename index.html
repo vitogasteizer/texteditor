@@ -25,6 +25,7 @@
       /* Ensure full height for app container */
       html, body, #root, #root > div {
         height: 100%;
+        overflow: hidden; /* Prevent body scroll */
       }
 
       /* Make the main app layout a flex column that takes full height */
@@ -41,33 +42,46 @@
       }
       
       /* The zoom container should not scale and should fill the main area */
-      main > div[style*="transform"] {
+      .editor-zoom-container {
         transform: none !important;
         padding: 0 !important;
+        width: 100% !important;
         flex-grow: 1; /* Make it grow */
         display: flex; /* Make it a flex container for the page */
         flex-direction: column;
         overflow-y: auto; /* Allow this container to scroll */
+        overflow-x: hidden;
+        align-items: stretch !important;
       }
 
       /* The page itself should have no margin/shadow and fill the zoom container */
       #editor-page {
         width: 100% !important;
-        min-height: auto !important;
+        min-height: 100% !important; /* Use min-height 100% to fill screen */
         flex-grow: 1; /* Grow to fill parent */
         margin: 0 !important;
         box-shadow: none !important;
         display: flex; /* Use flex to make the content div grow */
         flex-direction: column;
         padding: 0 !important; /* Remove page margins for mobile view */
+        border-radius: 0 !important;
       }
       
-      /* The editable content div should provide padding and grow to fill the page */
-      #editor-page > div[contenteditable="true"] {
-        padding: 0.75rem !important; /* Use minimal padding for mobile */
+      /* The content wrapper (div with inline styles for margins) */
+      .editor-content-wrapper {
+        padding: 1rem !important; /* Override inline style margins with small padding */
+        min-height: auto !important; /* Allow auto height */
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* The editable content div */
+      #editor-page > div > div[contenteditable="true"] {
         flex-grow: 1;
         overflow-wrap: break-word; /* Ensure long words wrap */
         word-break: break-word; /* Alternative for wrapping */
+        outline: none;
       }
   
       main.bg-gray-200, main.dark\\:bg-gray-600 {
@@ -105,9 +119,11 @@
       }
       
       /* Remove zoom and centering from page wrapper */
-      main > div[style*="transform"] {
+      .editor-zoom-container {
         transform: none !important;
         padding: 0 !important;
+        display: block !important;
+        overflow: visible !important;
       }
       
       /* Style the editor page itself for print */
